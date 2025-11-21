@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
-//import { supabase } from "../../lib/supabase"
-import { supabase } from '../../lib/supabase.js';
+import { supabase } from "../../lib/supabase.ts"
+
 
 
 interface AuthModalProps {
