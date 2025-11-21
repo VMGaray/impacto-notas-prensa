@@ -1,5 +1,5 @@
-/*import { useState, type FormEvent } from 'react';
-/*import { supabase } from '../../lib/supabase';
+import { useState, type FormEvent } from 'react';
+import { supabase } from '../../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -243,4 +243,4 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
       </div>
     </div>
   );
-};*/
+};
