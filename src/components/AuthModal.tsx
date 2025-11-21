@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { supabase } from "../../lib/supabase"
+//import { supabase } from "../../lib/supabase"
+import { supabase } from '../../lib/supabase.js';
+
 
 interface AuthModalProps {
   isOpen: boolean;
