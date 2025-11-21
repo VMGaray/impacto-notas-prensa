@@ -1,0 +1,716 @@
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ============================================
+    // GENERAR O RECUPERAR ID DE SESIÓN
+    // ============================================
+    let sessionId = sessionStorage.getItem('idSesion');
+    if (!sessionId) {
+        // Generar nuevo ID de sesión único
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('idSesion', sessionId);
+        console.log('🆔 Nuevo ID de sesión generado:', sessionId);
+    } else {
+        console.log('🆔 ID de sesión recuperado:', sessionId);
+    }
+
+    // Función de ayuda para garantizar que los valores numéricos sean seguros
+    const ensureNumber = (val) => {
+        // Convierte explicitamente a número, o usa 0 si falla (NaN, null, undefined)
+        const num = Number(val);
+        return (typeof num === 'number' && !isNaN(num)) ? num : 0;
+    };
+
+    // ============================================
+    // LÓGICA PRINCIPAL DEL FORMULARIO
+    // ============================================
+    document.getElementById('impact-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const organizacion = document.getElementById('organizacion').value;
+        const tema = document.getElementById('tema').value;
+        const fecha = document.getElementById('fecha').value;
+
+        const WEBHOOK_URL = "https://n8n.icc-e.org/webhook-test/0c67f547-a6b6-431a-9368-68dd2d8a4a8b";
+
+        const data = {
+            organizacion: organizacion,
+            tema: tema,
+            fecha: fecha,
+            id_sesion: sessionId
+        };
+
+        // Muestra el loader y limpia los resultados
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('metrics-output').innerHTML = '';
+        document.getElementById('global-result').textContent = '';
+
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(async response => {
+            console.log('Estado HTTP:', response.status);
+            console.log('Headers:', response.headers);
+
+            if (!response.ok) {
+              throw new Error(`Error en el servidor de análisis (HTTP Status: ${response.status})`);
+            }
+
+            const text = await response.text();
+            console.log('Respuesta del servidor (texto):', text);
+
+            if (!text || text.trim() === '') {
+                throw new Error('El servidor devolvió una respuesta vacía. Verifique que el workflow de N8N esté ACTIVO y configurado correctamente.');
+            }
+
+            try {
+                let parsed = JSON.parse(text);
+
+                // ⚠️ Si n8n devuelve un array, tomar el primer elemento
+                if (Array.isArray(parsed)) {
+                    parsed = parsed[0];
+                }
+
+                // ⚠️ Si n8n envuelve los datos en un objeto "output", extraerlos
+                if (parsed.output && typeof parsed.output === 'object') {
+                    parsed = parsed.output;
+                }
+
+                return parsed;
+            } catch (e) {
+                // Si el parseo falla, mostramos el error original
+                throw new Error(`El servidor no devolvió JSON válido. Respuesta: ${text.substring(0, 200)}`);
+            }
+        })
+        .then(analysisResult => {
+            console.log('Respuesta completa de la API:', analysisResult);
+            console.log('Objeto analisis:', analysisResult.analisis);
+
+            // ⚠️ MANEJO ESPECIAL: Si n8n devuelve sin_cobertura: true
+            if (analysisResult.sin_cobertura === true) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                document.querySelector('.subtitle').style.display = 'none';
+                document.querySelector('.freemium-note').style.display = 'none';
+                document.getElementById('impact-form').style.display = 'none';
+
+                document.getElementById('res-organizacion').textContent = organizacion;
+                document.getElementById('res-tema').textContent = tema;
+                document.getElementById('res-resumen-ejecutivo').textContent = analysisResult.mensaje || 'No se encontró cobertura sobre este tema.';
+
+                const globalResultDiv = document.getElementById('global-result');
+                globalResultDiv.textContent = analysisResult.mensaje || 'No se encontró cobertura sobre este tema.';
+                globalResultDiv.className = 'global-result rojo';
+
+                document.getElementById('ai-badge').style.display = 'none';
+                document.getElementById('metrics-output').innerHTML = '';
+
+                window.currentAnalysis = {
+                    organizacion,
+                    tema,
+                    fecha,
+                    sin_cobertura: true,
+                    mensaje: analysisResult.mensaje,
+                    resultado_global: analysisResult.mensaje || 'Sin cobertura',
+                    cobertura_medios: 0,
+                    cobertura_radio: 0,
+                    cobertura_tv: 0,
+                    cobertura_emisiones: 0,
+                    duracion_dias: 0,
+                    alcance_estimado: 0,
+                    menciones: { detalle: [] } 
+                };
+
+                return; // Salir temprano
+            }
+
+            // ⚠️ VALIDACIÓN: Verificar que resultado_global exista antes de usarlo
+            if (!analysisResult.resultado_global) {
+                throw new Error('El servidor no devolvió un resultado_global válido. Verifique la configuración del workflow de n8n.');
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.querySelector('.subtitle').style.display = 'none';
+            document.querySelector('.freemium-note').style.display = 'none';
+
+            document.getElementById('res-organizacion').textContent = organizacion;
+            document.getElementById('res-tema').textContent = tema;
+            document.getElementById('impact-form').style.display = 'none';
+
+
+            // Muestra el resumen ejecutivo de la IA
+            if (analysisResult.resumen_ejecutivo) {
+                document.getElementById('res-resumen-ejecutivo').textContent = analysisResult.resumen_ejecutivo;
+            }
+
+              // Obtener contexto de menciones para usar más adelante
+          const contexto = analysisResult.menciones?.detalle || [];
+          // Filtrar solo radio y TV
+            const mencionesValidas = contexto.filter(m => {
+            const tipoNorm = (m?.tipo || '').trim().toLowerCase();
+            return tipoNorm === 'radio' || tipoNorm === 'tv';
+        });
+
+
+
+            // Mostrar badge de IA si el análisis fue generado con Claude AI
+            const aiBadge = document.getElementById('ai-badge');
+            if (analysisResult.ai_model === 'claude-3.5-sonnet' && analysisResult.ai_provider === 'anthropic') {
+                aiBadge.style.display = 'flex';
+                aiBadge.querySelector('.ai-text').innerHTML = 'Análisis generado con <strong>Claude AI 3.5 Sonnet (Anthropic)</strong>';
+            } else if (analysisResult.ai_model === 'fallback') {
+                aiBadge.style.display = 'flex';
+                aiBadge.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                aiBadge.querySelector('.ai-text').innerHTML = '<strong>Análisis básico</strong> (IA no disponible temporalmente)';
+            } else {
+                aiBadge.style.display = 'none';
+            }
+
+            const globalResultDiv = document.getElementById('global-result');
+            globalResultDiv.textContent = `Resultado global: ${analysisResult.resultado_global}`;
+            // Pintar en verde todos los casos positivos (que contengan "funcionó")
+            // Pintar en rojo solo "No funcionó" o similares negativos
+            const esPositivo = analysisResult.resultado_global.toLowerCase().includes('funcionó') &&
+                              !analysisResult.resultado_global.toLowerCase().startsWith('no');
+            globalResultDiv.className = esPositivo ? 'global-result verde' : 'global-result rojo';
+
+           // ===============================================
+const metricsOutput = document.getElementById('metrics-output');
+
+const coberturaMedios = ensureNumber(analysisResult.cobertura_medios);
+const coberturaRadio = ensureNumber(analysisResult.cobertura_radio);
+const coberturaTV = ensureNumber(analysisResult.cobertura_tv);
+const coberturaEmisiones = ensureNumber(analysisResult.cobertura_emisiones);
+const duracionDias = ensureNumber(analysisResult.duracion_dias);
+const alcanceEstimado = analysisResult.alcance_estimado || "0 personas";
+const rangoFechas = analysisResult.rango_fechas || "";
+
+const metrics = {
+    'Cobertura de medios': coberturaMedios.toLocaleString(),
+    'Cobertura de radio': coberturaRadio.toLocaleString(),
+    'Cobertura de televisión': coberturaTV.toLocaleString(),
+    'Cantidad de emisiones': coberturaEmisiones.toLocaleString(),
+    'Alcance estimado': alcanceEstimado,
+    'Duración en días': `${duracionDias.toLocaleString()} ${rangoFechas}`
+};
+
+const analysisDetail = analysisResult.analisis;
+
+for (const key in analysisDetail) {
+    const detail = analysisDetail[key];
+    let metricDisplayName = key.charAt(0).toUpperCase() + key.slice(1);
+
+    if (key === 'cobertura') metricDisplayName = 'Cobertura de medios';
+    if (key === 'alcance') metricDisplayName = 'Alcance estimado';
+    if (key === 'duracion') metricDisplayName = 'Duración en días';
+    if (key === 'emisiones') metricDisplayName = 'Cantidad de emisiones';
+
+    let metricValue = metrics[metricDisplayName] || '';
+
+    metricsOutput.innerHTML += `
+        <div class="metric-box ${detail.color}">
+            <strong>${metricDisplayName}:</strong> ${metricValue}
+        </div>
+    `;
+}
+
+// Cobertura separada visualmente (fuera del análisisDetail)
+metricsOutput.innerHTML += `
+    <div class="metric-box verde">
+        <strong>Cobertura de radio:</strong> ${metrics['Cobertura de radio']}
+    </div>
+    <div class="metric-box verde">
+        <strong>Cobertura de televisión:</strong> ${metrics['Cobertura de televisión']}
+    </div>
+    <div class="metric-box verde">
+        <strong>Menciones encontradas (Radio/TV):</strong> ${mencionesValidas.length}
+    </div>
+`;
+
+// Mostrar recomendaciones que vienen de N8N/Claude AI
+if (analysisResult.recomendaciones && Array.isArray(analysisResult.recomendaciones) && analysisResult.recomendaciones.length > 0) {
+    // Determinar color basado en el resultado global
+    const resultadoGlobal = (analysisResult.resultado_global || '').toLowerCase();
+    const esPositivo = resultadoGlobal.includes('funcionó') && !resultadoGlobal.startsWith('no');
+    const colorRecomendaciones = esPositivo ? 'verde' : 'rojo';
+
+    metricsOutput.innerHTML += `
+        <div class="metric-box ${colorRecomendaciones}">
+            <strong>Recomendaciones:</strong>
+            <ul style="margin-top: 10px; padding-left: 20px;">
+                ${analysisResult.recomendaciones.map(rec => `<li>${rec}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+}
+            window.currentAnalysis = {
+    ...analysisResult,
+    organizacion,
+    tema,
+    fecha,
+    menciones: {
+    detalle: mencionesValidas
+  }
+};
+
+        })
+        .catch(error => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').innerHTML = `<h2 style="color:red;">Error en el análisis</h2><p>No se pudo completar la solicitud. Verifique que el workflow de n8n esté **ACTIVO**.</p><p>Detalle: ${error.message}</p>`;
+            console.error('Fetch error:', error);
+        });
+    });
+
+    // ============================================
+    // FUNCIONALIDADES ADICIONALES (Resto del código)
+    // ============================================
+
+    // Variable global para almacenar análisis guardados
+    let savedAnalyses = JSON.parse(localStorage.getItem('savedAnalyses')) || [];
+
+    // 1. VER DETALLES AMPLIADOS
+document.getElementById('btn-detalles').addEventListener('click', function() {
+    const modal = document.getElementById('modal-detalles');
+    const modalBody = document.getElementById('modal-detalles-body');
+
+    if (!window.currentAnalysis) {
+        alert('No hay análisis disponible para mostrar detalles.');
+        return;
+    }
+
+    const analysis = window.currentAnalysis;
+
+    const aiInfoHTML = analysis.ai_model === 'claude-3.5-sonnet'
+        ? `<div class="detail-item" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left-color: #667eea;">
+            <h4>🤖 Análisis con Inteligencia Artificial</h4>
+            <p><strong>Modelo:</strong> Claude 3.5 Sonnet</p>
+            <p><strong>Proveedor:</strong> Anthropic</p>
+            <p><strong>Tipo de análisis:</strong> Inteligencia artificial generativa</p>
+            <p><strong>Capacidades:</strong> Análisis contextual, interpretación de datos y generación de recomendaciones personalizadas basadas en patrones identificados en los datos del endpoint.</p>
+        </div>`
+        : analysis.ai_model === 'fallback'
+        ? `<div class="detail-item" style="background: #fef3c7; border-left-color: #f59e0b;">
+            <h4>⚠️ Análisis básico</h4>
+            <p><strong>Tipo:</strong> Algoritmo básico (IA no disponible)</p>
+            <p><strong>Motivo:</strong> ${analysis.error || 'IA temporalmente no disponible'}</p>
+        </div>`
+        : '';
+
+    modalBody.innerHTML = `
+        <div class="detail-item">
+            <h4>Información general</h4>
+            <p><strong>Organización:</strong> ${analysis.organizacion}</p>
+            <p><strong>Tema:</strong> ${analysis.tema}</p>
+            <p><strong>Fecha:</strong> ${analysis.fecha}</p>
+            <p><strong>Resultado global:</strong> ${analysis.resultado_global}</p>
+        </div>
+
+        ${aiInfoHTML}
+
+        <div class="detail-item">
+            <h4>Resumen ejecutivo del análisis (Claude AI)</h4>
+            <p>${analysis.resumen_ejecutivo || 'No disponible, verifique la respuesta de la IA.'}</p>
+        </div>
+
+        <div class="detail-item">
+            <h4>Cobertura de medios</h4>
+            <p><strong>Cantidad:</strong> ${analysis.cobertura_medios || 0} medios</p>
+            <p><strong>Descripción:</strong> Indica cuántos medios de comunicación publicaron información sobre la nota de prensa. Una cobertura alta sugiere que el mensaje tuvo una amplia difusión mediática.</p>
+        </div>
+
+        <div class="detail-item">
+            <h4>Cantidad de emisiones</h4>
+            <p><strong>Total:</strong> ${analysis.cobertura_emisiones || 0}</p>
+            <p><strong>Descripción:</strong> Número de emisiones únicas en radio y televisión que difundieron la nota. Refleja la diversidad de medios que participaron en la cobertura.</p>
+        </div>
+
+        <div class="detail-item">
+            <h4>Alcance estimado</h4>
+            <p><strong>Personas impactadas:</strong> ${(analysis.alcance_estimado || 0).toLocaleString()}</p>
+            <p><strong>Descripción:</strong> Estimación del número total de personas que potencialmente vieron o fueron expuestas al mensaje a través de los diferentes medios de comunicación.</p>
+        </div>
+
+        <div class="detail-item">
+            <h4>Duración en agenda mediática</h4>
+            <p><strong>Días activos:</strong> ${analysis.duracion_dias || 0} días</p>
+            <p><strong>Descripción:</strong> Tiempo durante el cual la nota de prensa se mantuvo relevante en los medios. Una mayor duración indica que el tema generó interés sostenido.</p>
+        </div>
+    `;
+
+   const menciones = analysis.menciones?.detalle || [];
+
+const mencionesValidas = menciones.filter(m => {
+  if (typeof m === 'object') {
+    const tipoNorm = (m.tipo || '').trim().toLowerCase();
+    return tipoNorm === 'tv' || tipoNorm === 'radio';
+  }
+  return false; // si es string o no tiene tipo, lo descartamos
+});
+
+if (mencionesValidas.length > 0) {
+  modalBody.innerHTML += `
+    <div class="detail-item">
+      <h4>Menciones encontradas</h4>
+      <p><strong>Cantidad:</strong> ${mencionesValidas.length} menciones</p>
+      <p><strong>Descripción:</strong> A continuación se muestran fragmentos de las noticias de radio y TV donde se menciona la organización o el tema analizado.</p>
+      <div style="margin-top: 15px;">
+        ${mencionesValidas.map((m, index) => {
+          const extracto = m.extracto || m.texto || "";
+          const fecha = m.fecha || "";
+          const medio = m.medio || "";
+          const tipo = m.tipo || "";
+          const tipoNorm = tipo.trim().toLowerCase();
+          const colorBadge = tipoNorm === 'tv' ? '#48bb78' : '#4299e1';
+
+          return `
+            <div class="contexto-item" style="margin-bottom: 20px; padding: 15px; background-color: #f7fafc; border-left: 4px solid ${colorBadge}; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="color: #2b6cb0; font-size: 1.05em;">📰 Mención ${index + 1}</strong>
+                <span style="background-color: ${colorBadge}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; text-transform: uppercase;">${tipo}</span>
+              </div>
+
+              ${extracto ? `
+                <div style="margin-bottom: 12px;">
+                  <p style="margin: 0; font-style: italic; color: #2d3748; line-height: 1.6; background-color: white; padding: 10px; border-radius: 4px;">
+                    "${extracto}"
+                  </p>
+                </div>
+              ` : ''}
+
+              <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; font-size: 0.9em;">
+                ${medio ? `
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #718096;">📡 <strong>Medio:</strong></span>
+                    <span style="color: #2d3748;">${medio}</span>
+                  </div>
+                ` : ''}
+
+                ${fecha ? `
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #718096;">📅 <strong>Fecha:</strong></span>
+                    <span style="color: #2d3748;">${fecha}</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+} else {
+  modalBody.innerHTML += `
+    <div class="detail-item">
+      <h4>Menciones encontradas</h4>
+      <p><strong>Cantidad:</strong> 0 menciones válidas</p>
+      <p><strong>Descripción:</strong> No se encontraron menciones de radio o TV en los medios consultados.</p>
+    </div>
+  `;
+}
+
+
+    // 💡 Recomendaciones (en detalles ampliados)
+    if (analysis.recomendaciones && Array.isArray(analysis.recomendaciones) && analysis.recomendaciones.length > 0) {
+        modalBody.innerHTML += `
+            <div class="detail-item">
+                <h4>Recomendaciones</h4>
+                <p><strong>Cantidad:</strong> ${analysis.recomendaciones.length} recomendaciones</p>
+                <p><strong>Descripción:</strong> Sugerencias objetivas basadas en el análisis de las métricas y el resultado global.</p>
+                <ul style="margin-top: 15px; padding-left: 20px;">
+                    ${analysis.recomendaciones.map(rec => `<li style="margin-bottom: 8px;">${rec}</li>`).join("")}
+                </ul>
+            </div>
+        `;
+    }
+
+    modal.style.display = 'block';
+});
+
+
+    // 2. COMPARAR CON OTRAS NOTAS
+    // ⚠️ FUNCIONALIDAD COMENTADA - VERSIÓN GRATUITA
+    // Descomentar cuando se implemente la versión Pro
+    /*
+    document.getElementById('btn-comparar').addEventListener('click', function() {
+        const modal = document.getElementById('modal-comparar');
+        updateComparisonList();
+        modal.style.display = 'block';
+    });
+
+    document.getElementById('btn-guardar-actual').addEventListener('click', function() {
+        if (!window.currentAnalysis) {
+            alert('No hay análisis actual para guardar.');
+            return;
+        }
+
+        savedAnalyses.push({
+            ...window.currentAnalysis,
+            savedAt: new Date().toISOString()
+        });
+
+        localStorage.setItem('savedAnalyses', JSON.stringify(savedAnalyses));
+        updateComparisonList();
+        alert('Análisis guardado exitosamente.');
+    });
+
+    document.getElementById('btn-limpiar-comparacion').addEventListener('click', function() {
+        if (confirm('¿Está seguro de que desea eliminar todos los análisis guardados?')) {
+            savedAnalyses = [];
+            localStorage.removeItem('savedAnalyses');
+            updateComparisonList();
+        }
+    });
+
+    function updateComparisonList() {
+        const listDiv = document.getElementById('comparacion-list');
+        const chartDiv = document.getElementById('comparison-chart');
+
+        if (savedAnalyses.length === 0) {
+            listDiv.innerHTML = '<p class="info-message">Guarde este análisis y agregue más para comparar.</p>';
+            chartDiv.innerHTML = '';
+            return;
+        }
+
+        let html = '<h3>Análisis guardados (' + savedAnalyses.length + ')</h3>';
+
+        savedAnalyses.forEach((analysis, index) => {
+            html += `
+                <div class="comparison-item">
+                    <div>
+                        <h4>${analysis.organizacion} - ${analysis.tema}</h4>
+                        <p>Fecha: ${analysis.fecha} | Resultado: ${analysis.resultado_global}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        listDiv.innerHTML = html;
+
+        // Crear tabla comparativa
+        if (savedAnalyses.length > 0) {
+            chartDiv.innerHTML = '<h3>Comparación de métricas</h3>' + createComparisonTable();
+        }
+    }
+
+    function createComparisonTable() {
+        let tableHTML = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin-top: 15px;">';
+        tableHTML += '<thead><tr style="background-color: #f7fafc;">';
+        tableHTML += '<th style="padding: 12px; border: 1px solid #e2e8f0; text-align: left;">Organización</th>';
+        tableHTML += '<th style="padding: 12px; border: 1px solid #e2e8f0;">Cobertura</th>';
+        tableHTML += '<th style="padding: 12px; border: 1px solid #e2e8f0;">Alcance</th>';
+        tableHTML += '<th style="padding: 12px; border: 1px solid #e2e8f0;">Duración</th>';
+        tableHTML += '<th style="padding: 12px; border: 1px solid #e2e8f0;">Resultado</th>';
+        tableHTML += '</tr></thead><tbody>';
+
+        savedAnalyses.forEach(analysis => {
+            // Pintar en verde todos los casos positivos (que contengan "funcionó")
+            const esPositivo = analysis.resultado_global.toLowerCase().includes('funcionó') &&
+                              !analysis.resultado_global.toLowerCase().startsWith('no');
+            const resultColor = esPositivo ? '#48bb78' : '#f56565';
+            tableHTML += '<tr>';
+            tableHTML += `<td style="padding: 12px; border: 1px solid #e2e8f0;"><strong>${analysis.organizacion}</strong><br><small>${analysis.tema}</small></td>`;
+            tableHTML += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${analysis.cobertura_medios || 0}</td>`;
+            tableHTML += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${(analysis.alcance_estimado || 0).toLocaleString()}</td>`;
+            tableHTML += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">${analysis.duracion_dias || 0}</td>`;
+            tableHTML += `<td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center; color: ${resultColor}; font-weight: bold;">${analysis.resultado_global}</td>`;
+            tableHTML += '</tr>';
+        });
+
+        tableHTML += '</tbody></table></div>';
+        return tableHTML;
+    }
+    */
+
+    // 3. SOLICITAR ANÁLISIS COMPLETO - Muestra modal antes de descargar
+    document.getElementById('btn-analisis-completo').addEventListener('click', function() {
+        if (!window.currentAnalysis) {
+            alert('No hay análisis disponible para exportar.');
+            return;
+        }
+
+        // Abrir el modal de descarga
+        const modal = document.getElementById('modal-descarga');
+        modal.style.display = 'block';
+    });
+
+    // Botón DESCARGAR INFORME BÁSICO (dentro del modal)
+    document.getElementById('btn-descargar-basico').addEventListener('click', function() {
+        if (!window.currentAnalysis) {
+            alert('No hay análisis disponible para exportar.');
+            return;
+        }
+
+        const analysis = window.currentAnalysis;
+
+        // Crear contenido del reporte
+        let reportContent = `ANÁLISIS COMPLETO DE IMPACTO - NOTA DE PRENSA\n`;
+        reportContent += `${'='.repeat(60)}\n\n`;
+        reportContent += `INFORMACIÓN GENERAL\n`;
+        reportContent += `Organización: ${analysis.organizacion}\n`;
+        reportContent += `Tema: ${analysis.tema}\n`;
+        reportContent += `Fecha de Publicación: ${analysis.fecha}\n`;
+        reportContent += `Fecha de Análisis: ${new Date().toLocaleDateString()}\n`;
+        reportContent += `Resultado Global: ${analysis.resultado_global}\n\n`;
+
+        // Agregar información de IA
+        if (analysis.ai_model === 'claude-3.5-sonnet') {
+            reportContent += `${'='.repeat(60)}\n`;
+            reportContent += `ANÁLISIS CON INTELIGENCIA ARTIFICIAL\n`;
+            reportContent += `${'='.repeat(60)}\n`;
+            reportContent += `Modelo: Claude 3.5 Sonnet\n`;
+            reportContent += `Proveedor: Anthropic\n`;
+            reportContent += `Tipo: Inteligencia Artificial generativa\n`;
+            reportContent += `Capacidades: Análisis contextual, interpretación de datos\n`;
+            reportContent += `              y generación de recomendaciones personalizadas\n\n`;
+        } else if (analysis.ai_model === 'fallback') {
+            reportContent += `NOTA: Análisis básico generado con algoritmo (IA no disponible)\n`;
+            reportContent += `Motivo: ${analysis.error || 'IA temporalmente no disponible'}\n\n`;
+        }
+
+        if (analysis.resumen_ejecutivo) {
+            reportContent += `${'='.repeat(60)}\n`;
+            reportContent += `RESUMEN EJECUTIVO (ANÁLISIS IA)\n`;
+            reportContent += `${'='.repeat(60)}\n`;
+            reportContent += `${analysis.resumen_ejecutivo}\n\n`;
+        }
+
+        reportContent += `${'='.repeat(60)}\n`;
+        reportContent += `MÉTRICAS DETALLADAS\n`;
+        reportContent += `${'='.repeat(60)}\n\n`;
+
+        reportContent += `1. COBERTURA DE MEDIOS\n`;
+        reportContent += `   Cantidad: ${analysis.cobertura_medios || 0} medios\n`;
+        reportContent += `   Descripción: Indica cuántos medios publicaron sobre la nota.\n\n`;
+
+        reportContent += `2. CANTIDAD DE EMISIONES\n`;
+        reportContent += `   Total: ${analysis.cobertura_emisiones || 0}\n`;
+        reportContent += `   Descripción: Número de emisiones únicas en radio y televisión que difundieron la nota.\n\n`;
+
+        reportContent += `3. ALCANCE ESTIMADO\n`;
+        reportContent += `   Personas impactadas: ${(analysis.alcance_estimado || 0).toLocaleString()}\n`;
+        reportContent += `   Descripción: Estimación del número de personas expuestas al mensaje.\n\n`;
+
+        reportContent += `4. DURACIÓN EN AGENDA MEDIÁTICA\n`;
+        reportContent += `   Días activos: ${analysis.duracion_dias || 0}\n`;
+        reportContent += `   Descripción: Tiempo que la nota se mantuvo relevante en medios.\n\n`;
+
+        // Agregar recomendaciones al reporte
+        if (analysis.recomendaciones && Array.isArray(analysis.recomendaciones) && analysis.recomendaciones.length > 0) {
+            reportContent += `${'='.repeat(60)}\n`;
+            reportContent += `RECOMENDACIONES\n`;
+            reportContent += `${'='.repeat(60)}\n\n`;
+            analysis.recomendaciones.forEach((rec, index) => {
+                reportContent += `${index + 1}. ${rec}\n`;
+            });
+            reportContent += `\n`;
+        }
+
+        // Crear y descargar archivo
+        const blob = new Blob([reportContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Analisis_completo_${analysis.organizacion}_${new Date().getTime()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Cerrar el modal
+        document.getElementById('modal-descarga').style.display = 'none';
+
+        alert('📄 Análisis completo descargado exitosamente.');
+    });
+
+    // Botón VER VERSIÓN PRO
+    document.getElementById('btn-ver-pro').addEventListener('click', function() {
+        window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro - ¿Funcionó mi nota de prensa?&body=Hola, me gustaría recibir información sobre la versión Pro y sus funcionalidades completas.', '_blank');
+        // O puedes redirigir a una página: window.location.href = 'https://tu-sitio.com/version-pro';
+    });
+
+
+    // CERRAR MODALES
+    const modals = document.getElementsByClassName('modal');
+    const closeButtons = document.getElementsByClassName('close');
+
+    for (let i = 0; i < closeButtons.length; i++) {
+        closeButtons[i].onclick = function() {
+            this.parentElement.parentElement.style.display = 'none';
+        }
+    }
+
+    window.onclick = function(event) {
+        for (let i = 0; i < modals.length; i++) {
+            if (event.target === modals[i]) {
+                modals[i].style.display = 'none';
+            }
+        }
+    }
+
+    // ==============================
+// FUNCIONALIDADES FREEMIUM / PRO
+// ==============================
+
+// Botón: Comparar con otras notas (versión Pro) - Abre modal
+document.getElementById('btn-comparar').addEventListener('click', function() {
+    const modal = document.getElementById('modal-comparar');
+    modal.style.display = 'block';
+});
+
+// Botón: Contactar para versión Pro (dentro del modal comparar)
+document.getElementById('btn-contactar-pro').addEventListener('click', function() {
+    window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro - Funcionalidad de comparación&body=Hola, me gustaría recibir información sobre la versión Pro y específicamente la funcionalidad de comparación de análisis.', '_blank');
+});
+
+// Botón: Volver (cierra modal comparar)
+document.getElementById('btn-cerrar-comparar').addEventListener('click', function() {
+    document.getElementById('modal-comparar').style.display = 'none';
+});
+
+// ⚠️ CÓDIGO DUPLICADO COMENTADO - La funcionalidad de análisis completo ya está implementada arriba
+/*
+// Botón: Solicitar análisis completo (confirmación antes de descargar)
+document.getElementById('btn-analisis-completo').addEventListener('click', function() {
+    const confirmDownload = confirm(
+        "Se va a descargar el informe de la versión gratuita con datos básicos de impacto de su nota de prensa.\n\n" +
+        "Para un informe completo y funcionalidades Pro, contacte con ventas en: contacto@icc-e.org\n\n" +
+        "¿Desea continuar con la descarga?"
+    );
+
+    if (!confirmDownload) return;
+
+    // ⚠️ Asegurate de que tu lógica de descarga esté dentro de este bloque
+    // Si ya tenés el código de descarga implementado, movelo acá adentro
+});
+*/
+
+// Botón: Analizar otra nota de prensa (resetear formulario)
+document.getElementById('btn-reset-form').addEventListener('click', function() {
+    // Resetear campos del formulario
+    document.getElementById('impact-form').reset();
+
+    // Mostrar nuevamente el formulario
+    document.getElementById('impact-form').style.display = 'block';
+
+    // Mostrar los textos introductorios debajo del título
+    document.querySelector('.subtitle').style.display = 'block';
+    document.querySelector('.freemium-note').style.display = 'block';
+
+    // Ocultar resultados y limpiar contenido
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('metrics-output').innerHTML = '';
+    document.getElementById('global-result').textContent = '';
+    document.getElementById('ai-badge').style.display = 'none';
+    document.getElementById('res-resumen-ejecutivo').textContent = '';
+});
+
+
+}); // CIERRE DOMContentLoaded
+
+
