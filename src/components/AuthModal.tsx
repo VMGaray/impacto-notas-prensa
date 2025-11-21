@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { supabase } from "../../lib/supabase.ts"
+import { supabase } from "../../lib/supabase"
 
 
 
