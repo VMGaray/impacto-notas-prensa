@@ -5,17 +5,18 @@ interface MencionesDisplayProps {
 }
 
 export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
-  const mencionesValidas = menciones.filter((m: Mencion) => {
-    const tipoNorm = (m.tipo || '').trim().toLowerCase();
-    return tipoNorm === 'tv' || tipoNorm === 'radio';
+  // Filtrar solo menciones de TV y radio
+  const mencionesValidas = menciones.filter((m) => {
+    const tipo = (m.tipo || '').toLowerCase().trim();
+    return tipo === 'tv' || tipo === 'radio' || tipo === 'televisión' || tipo === 'television';
   });
 
   if (mencionesValidas.length === 0) {
     return (
       <div className="detail-item">
         <h4>Menciones encontradas</h4>
-        <p><strong>Cantidad:</strong> 0 menciones válidas</p>
-        <p><strong>Descripción:</strong> No se encontraron menciones de radio o televisión en los medios consultados.</p>
+        <p><strong>Cantidad:</strong> 0 menciones</p>
+        <p><strong>Descripción:</strong> No se encontraron menciones en los medios consultados.</p>
       </div>
     );
   }
@@ -24,23 +25,24 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
     <div className="detail-item">
       <h4>Menciones encontradas</h4>
       <p><strong>Cantidad:</strong> {mencionesValidas.length} menciones</p>
-      <p><strong>Descripción:</strong> Fragmentos de las noticias de radio y televisión donde se menciona la organización o el tema analizado.</p>
+      <p><strong>Descripción:</strong> Fragmentos de las noticias donde se menciona la organización o el tema analizado.</p>
       <div style={{ marginTop: '15px' }}>
         {mencionesValidas.map((m, index) => {
           const extracto = m.extracto || m.texto || "";
-          const colorBadge = m.tipo?.trim().toLowerCase() === 'tv' ? '#48bb78' : '#4299e1';
+          const tipo = (m.tipo || '').toLowerCase();
+          const colorBadge = tipo === 'tv' || tipo === 'television' ? '#48bb78' : '#4299e1';
 
           return (
             <div key={index} style={{
               marginBottom: '20px',
               padding: '15px',
               backgroundColor: '#f7fafc',
-              borderLeft: `4px solid ${colorBadge}`,
+              borderLeft: "4px solid " + colorBadge,
               borderRadius: '6px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <strong style={{ color: '#2b6cb0', fontSize: '1.05em' }}>📰 Mención {index + 1}</strong>
+                <strong style={{ color: '#2b6cb0', fontSize: '1.05em' }}>Mención {index + 1}</strong>
                 <span style={{
                   backgroundColor: colorBadge,
                   color: 'white',
@@ -73,13 +75,13 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
               <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '10px', fontSize: '0.9em' }}>
                 {m.medio && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: '#718096' }}>📡 <strong>Medio:</strong></span>
+                    <span style={{ color: '#718096' }}><strong>Medio:</strong></span>
                     <span style={{ color: '#2d3748' }}>{m.medio}</span>
                   </div>
                 )}
                 {m.fecha && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: '#718096' }}>📅 <strong>Fecha:</strong></span>
+                    <span style={{ color: '#718096' }}><strong>Fecha:</strong></span>
                     <span style={{ color: '#2d3748' }}>{m.fecha}</span>
                   </div>
                 )}
