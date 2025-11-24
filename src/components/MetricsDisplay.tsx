@@ -23,8 +23,8 @@ export const MetricsDisplay = ({ analysisResult, ensureNumber }: MetricsDisplayP
         } else if (key === 'alcance') {
           displayName = 'Alcance estimado';
           displayValue = analysisResult.alcance_estimado.toString();
-        } else if (key === 'duracion') {
-          displayName = 'Duracion en dias';
+        } else if (key === 'duración') {
+          displayName = 'Duración en días';
           displayValue = `${ensureNumber(analysisResult.duracion_dias)} dias`;
         } else if (key === 'emisiones') {
           displayName = 'Cantidad de emisiones';
@@ -39,13 +39,13 @@ export const MetricsDisplay = ({ analysisResult, ensureNumber }: MetricsDisplayP
       })}
 
       <div className="metric-box verde">
-        <strong>Cobertura radio:</strong> {ensureNumber(analysisResult.cobertura_radio)}
+        <strong>Cobertura de radio:</strong> {ensureNumber(analysisResult.cobertura_radio)}
       </div>
       <div className="metric-box verde">
-        <strong>Cobertura TV:</strong> {ensureNumber(analysisResult.cobertura_tv)}
+        <strong>Cobertura de televisión:</strong> {ensureNumber(analysisResult.cobertura_tv)}
       </div>
       <div className="metric-box verde">
-        <strong>Menciones (Radio/TV):</strong> {mencionesValidas.length}
+        <strong>Menciones (radio/televisión):</strong> {mencionesValidas.length}
       </div>
 
       {analysisResult.recomendaciones && analysisResult.recomendaciones.length > 0 && (

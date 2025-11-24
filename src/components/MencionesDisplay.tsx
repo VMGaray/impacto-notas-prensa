@@ -14,8 +14,8 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
     return (
       <div className="detail-item">
         <h4>Menciones encontradas</h4>
-        <p><strong>Cantidad:</strong> 0 menciones validas</p>
-        <p><strong>Descripcion:</strong> No se encontraron menciones de radio o TV en los medios consultados.</p>
+        <p><strong>Cantidad:</strong> 0 menciones válidas</p>
+        <p><strong>Descripción:</strong> No se encontraron menciones de radio o televisión en los medios consultados.</p>
       </div>
     );
   }
@@ -24,7 +24,7 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
     <div className="detail-item">
       <h4>Menciones encontradas</h4>
       <p><strong>Cantidad:</strong> {mencionesValidas.length} menciones</p>
-      <p><strong>Descripcion:</strong> Fragmentos de las noticias de radio y TV donde se menciona la organizacion o el tema analizado.</p>
+      <p><strong>Descripción:</strong> Fragmentos de las noticias de radio y televisión donde se menciona la organización o el tema analizado.</p>
       <div style={{ marginTop: '15px' }}>
         {mencionesValidas.map((m, index) => {
           const extracto = m.extracto || m.texto || "";
@@ -40,7 +40,7 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <strong style={{ color: '#2b6cb0', fontSize: '1.05em' }}>📰 Mencion {index + 1}</strong>
+                <strong style={{ color: '#2b6cb0', fontSize: '1.05em' }}>📰 Mención {index + 1}</strong>
                 <span style={{
                   backgroundColor: colorBadge,
                   color: 'white',

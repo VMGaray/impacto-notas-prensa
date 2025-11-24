@@ -47,7 +47,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesion');
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
       if (error) throw error;
 
       if (data.user) {
-        alert('Registro exitoso! Por favor verifica tu email.');
+        alert('¡Registro exitoso! Por favor, verifica tu correo electrónico.');
         setIsLogin(true);
         resetForm();
       }
@@ -114,7 +114,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
             onClick={() => setIsLogin(true)}
             type="button"
           >
-            Iniciar Sesion
+            Iniciar Sesión
           </button>
           <button
             className={`auth-tab ${!isLogin ? 'active' : ''}`}
@@ -133,7 +133,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
 
         {isLogin ? (
           <form onSubmit={handleLogin} className="auth-form">
-            <h2>Iniciar Sesion</h2>
+            <h2>Iniciar Sesión</h2>
 
             <div className="form-group">
               <label htmlFor="login-email">Email</label>
@@ -162,13 +162,13 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
             </div>
 
             <button type="submit" className="auth-submit-btn" disabled={loading}>
-              {loading ? 'Iniciando sesion...' : 'Iniciar Sesion'}
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesion'}
             </button>
 
             <p className="auth-switch">
               ¿No tienes cuenta?{' '}
               <span onClick={switchMode} className="auth-link">
-                Registrate aqui
+                Registrate aquí
               </span>
             </p>
           </form>

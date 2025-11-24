@@ -17,6 +17,7 @@ function App() {
   const [modalDetalles, setModalDetalles] = useState(false);
   const [modalComparar, setModalComparar] = useState(false);
   const [modalDescarga, setModalDescarga] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let id = sessionStorage.getItem('idSesion');
@@ -33,74 +34,78 @@ function App() {
     return typeof num === 'number' && !isNaN(num) ? num : 0;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const WEBHOOK_URL = "https://n8n.icc-e.org/webhook/0c67f547-a6b6-431a-9368-68dd2d8a4a8b";
-    const data = { organizacion, tema, fecha, id_sesion: sessionId };
+ const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  const WEBHOOK_URL = "https://n8n.icc-e.org/webhook/0c67f547-a6b6-431a-9368-68dd2d8a4a8b";
+  const data = { organizacion, tema, fecha, id_sesion: sessionId };
 
-    setLoading(true);
-    setShowResults(false);
+  setLoading(true);
+  setShowResults(false);
+  setError(null); 
 
-    try {
-      console.log('Enviando datos al webhook:', data);
+  try {
+    console.log('Enviando datos al webhook:', data);
 
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-      console.log('Respuesta HTTP:', response.status);
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
 
-      if (!response.ok) {
-        // Intentar leer el error del servidor
-        try {
-          const errorData = await response.json();
-          console.error('Error del servidor:', errorData);
-          throw new Error(
-            `Error ${response.status}: ${errorData.message || 'El webhook no esta disponible. Verifica que el workflow de n8n este activo.'}`
-          );
-        } catch {
-          throw new Error(
-            `Error ${response.status}: El webhook no esta disponible. Asegurate de que el workflow de n8n este activo y en modo produccion.`
-          );
-        }
-      }
+    clearTimeout(timeoutId);
+    console.log('Respuesta HTTP:', response.status);
 
-      const text = await response.text();
-      console.log('Respuesta del servidor:', text.substring(0, 200));
-
-      if (!text) throw new Error('Respuesta vacia del servidor');
-
-      let parsed: any = JSON.parse(text);
-      if (Array.isArray(parsed)) parsed = parsed[0];
-      if (parsed.output) parsed = parsed.output;
-
-      console.log('Datos parseados:', parsed);
-
-      setAnalysisResult(parsed);
-      setLoading(false);
-      setShowResults(true);
-      setShowForm(false);
-    } catch (error: any) {
-      setLoading(false);
-      console.error('Error completo:', error);
-
-      let errorMessage = 'Error desconocido';
-
-      if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'No se pudo conectar con el servidor. Verifica:\n\n' +
-                      '1. Que el workflow de n8n este ACTIVO\n' +
-                      '2. Que el webhook este en modo PRODUCCION (no test)\n' +
-                      '3. Tu conexion a internet\n\n' +
-                      'Si el workflow esta en modo test, haz clic en "Execute workflow" en n8n primero.';
-      } else {
-        errorMessage = error.message;
-      }
-
-      alert('❌ Error en el analisis:\n\n' + errorMessage);
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}`);
     }
-  };
+
+    const text = await response.text();
+    console.log('Respuesta del servidor:', text.substring(0, 200));
+
+    if (!text) throw new Error('Respuesta vacía del servidor');
+
+    let parsed: any = JSON.parse(text);
+    if (Array.isArray(parsed)) parsed = parsed[0];
+    if (parsed.output) parsed = parsed.output;
+
+    console.log('Datos parseados:', parsed);
+
+    setAnalysisResult(parsed);
+    setLoading(false);
+    setShowResults(true);
+    setShowForm(false);
+
+  } catch (error: any) {
+    setLoading(false);
+    console.error('Error completo:', error);
+
+    let userMessage = '';
+
+    if (error.name === 'AbortError') {
+      userMessage = 'El análisis está tardando más de lo habitual.\n\n' +
+                    'Es posible que haya numerosas menciones que analizar.\n\n' +
+                    'Por favor, vuelve a intentarlo en unos minutos.';
+    } 
+    else if (error.message.includes('Failed to fetch')) {
+      userMessage = 'No hemos podido conectar con el servidor.\n\n' +
+                    'Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
+    }
+    else if (error.message.includes('Error 5')) {
+      userMessage = 'El servidor está experimentando problemas temporales.\n\n' +
+                    'Por favor, inténtalo de nuevo en unos minutos.';
+    }
+    else {
+      userMessage = 'Ha ocurrido un error inesperado.\n\n' +
+                    'Por favor, inténtalo de nuevo.';
+    }
+
+    setError(userMessage);
+  }
+};
 
   const handleResetForm = () => {
     setOrganizacion('');
@@ -114,15 +119,15 @@ function App() {
   const handleDescargarBasico = () => {
     if (!analysisResult) return;
 
-    const report = `ANALISIS COMPLETO - NOTA DE PRENSA
+    const report = `ANÁLISIS COMPLETO - NOTA DE PRENSA
 ${'='.repeat(60)}
 
-INFORMACION GENERAL
-Organizacion: ${organizacion}
+INFORMACIÓN GENERAL
+Organización: ${organizacion}
 Tema: ${tema}
-Fecha de Publicacion: ${fecha}
-Fecha de Analisis: ${new Date().toLocaleDateString()}
-Resultado Global: ${analysisResult.resultado_global}
+Fecha de publicación: ${fecha}
+Fecha de análisis: ${new Date().toLocaleDateString()}
+Resultado global: ${analysisResult.resultado_global}
 
 ${analysisResult.resumen_ejecutivo ? `${'='.repeat(60)}
 RESUMEN EJECUTIVO
@@ -130,7 +135,7 @@ ${'='.repeat(60)}
 ${analysisResult.resumen_ejecutivo}
 
 ` : ''}${'='.repeat(60)}
-METRICAS DETALLADAS
+MÉTRICAS DETALLADAS
 ${'='.repeat(60)}
 
 1. COBERTURA DE MEDIOS
@@ -142,8 +147,8 @@ ${'='.repeat(60)}
 3. ALCANCE ESTIMADO
    Personas impactadas: ${analysisResult.alcance_estimado || 0}
 
-4. DURACION EN AGENDA MEDIATICA
-   Dias activos: ${analysisResult.duracion_dias || 0}
+4. DURACIÓN EN AGENDA MEDIÁTICA
+   Días activos: ${analysisResult.duracion_dias || 0}
 
 ${analysisResult.recomendaciones && analysisResult.recomendaciones.length > 0 ? `${'='.repeat(60)}
 RECOMENDACIONES
@@ -156,40 +161,40 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Analisis_${organizacion.replace(/\s+/g, '_')}_${Date.now()}.txt`;
+    a.download = `Análisis_${organizacion.replace(/\s+/g, '_')}_${Date.now()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     setModalDescarga(false);
-    alert('Analisis completo descargado exitosamente');
+    alert('Análisis completo descargado exitosamente');
   };
 
   const isPositiveResult = (resultado: string) => {
-    return resultado?.toLowerCase().includes('funciono') &&
+    return resultado?.toLowerCase().includes('funcionó') &&
            !resultado?.toLowerCase().startsWith('no');
   };
 
   return (
     <div className="container">
-      <h1>¿Funciono mi nota de prensa?</h1>
+      <h1>¿Funcionó mi nota de prensa?</h1>
 
       {showForm && (
         <>
           <p className="subtitle">
-            Ingresa los datos de tu comunicacion para ver su repercusion en medios canarios.
+            Ingresa los datos de tu comunicación para ver su repercusión en medios canarios.
           </p>
           <small className="freemium-note">
-            Esta utilizando la version gratuita que consulta menciones de radio y television en Canarias en los ultimos 3 dias.
+            Está utilizando la versión gratuita que consulta menciones de radio y television en Canarias en los últimos 3 días.
           </small>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="organizacion">Organizacion</label>
+              <label htmlFor="organización">Organización</label>
               <input
                 type="text"
-                id="organizacion"
+                id="organización"
                 value={organizacion}
                 onChange={(e) => setOrganizacion(e.target.value)}
                 placeholder="Ej: TechCorp"
@@ -210,7 +215,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
             </div>
 
             <div className="form-group">
-              <label htmlFor="fecha">Fecha de Publicacion</label>
+              <label htmlFor="fecha">Fecha de publicación</label>
               <input
                 type="date"
                 id="fecha"
@@ -220,36 +225,36 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
               />
             </div>
 
-            <button type="submit">Evaluar repercusion</button>
+            <button type="submit">Evaluar repercusión</button>
           </form>
         </>
       )}
 
       {loading && (
         <div id="loading">
-          Cargando analisis... Esto puede tomar unos segundos.
+          Cargando análisis... Esto puede tomar unos segundos.
         </div>
       )}
 
       {showResults && analysisResult && (
         <div id="results">
-          <h2>Resultados del analisis</h2>
+          <h2>Resultados del análisis</h2>
           <p className="freemium-note">
-            Version gratuita<br />
-            (Radio y television en Canarias, ultimos 3 dias)
+            Versión gratuita<br />
+            (Radio y televisión en Canarias, últimos 3 días)
           </p>
 
           {analysisResult.ai_model === 'claude-3.5-sonnet' && analysisResult.ai_provider === 'anthropic' && (
             <div className="ai-badge">
               <span className="ai-icon">🤖</span>
               <span className="ai-text">
-                Analisis generado con <strong>Claude AI 3.5 Sonnet (Anthropic)</strong>
+                Análisis generado con <strong>Inteligencia Artificial</strong>
               </span>
             </div>
           )}
 
           <div className="info-row">
-            <strong>Organizacion:</strong>
+            <strong>Organización:</strong>
             <span>{organizacion}</span>
           </div>
 
@@ -259,13 +264,13 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
           </div>
 
           <div className="ai-summary-box">
-            <h3>Resumen ejecutivo (Analisis de Claude)</h3>
+            <h3>Resumen ejecutivo (Análisis de IA)</h3>
             <p className="ai-summary-text">
               {analysisResult.resumen_ejecutivo || analysisResult.mensaje || 'No disponible'}
             </p>
           </div>
 
-          <h3>Metricas detalladas</h3>
+          <h3>Métricas detalladas</h3>
           <div id="metrics-output">
             <MetricsDisplay analysisResult={analysisResult} ensureNumber={ensureNumber} />
           </div>
@@ -282,7 +287,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
               <span className="btn-icon">📈</span> Comparar con otras notas
             </button>
             <button type="button" className="action-btn btn-success" onClick={() => setModalDescarga(true)}>
-              <span className="btn-icon">📄</span> Solicitar analisis completo
+              <span className="btn-icon">📄</span> Solicitar análisis completo
             </button>
             <button type="button" id="btn-reset-form" className="action-btn btn-primary" onClick={handleResetForm}>
               <span className="btn-icon">🔄</span> Analizar otra nota de prensa
@@ -291,12 +296,12 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         </div>
       )}
 
-      <Modal isOpen={modalDetalles} onClose={() => setModalDetalles(false)} title="Detalles ampliados del analisis">
+      <Modal isOpen={modalDetalles} onClose={() => setModalDetalles(false)} title="Detalles ampliados del análisis">
         {analysisResult && (
           <div>
             <div className="detail-item">
-              <h4>Informacion general</h4>
-              <p><strong>Organizacion:</strong> {organizacion}</p>
+              <h4>Información general</h4>
+              <p><strong>Organización:</strong> {organizacion}</p>
               <p><strong>Tema:</strong> {tema}</p>
               <p><strong>Fecha:</strong> {fecha}</p>
               <p><strong>Resultado global:</strong> {analysisResult.resultado_global}</p>
@@ -304,7 +309,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
 
             {analysisResult.ai_model === 'claude-3.5-sonnet' && (
               <div className="detail-item" style={{ background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)', borderLeftColor: '#667eea' }}>
-                <h4>🤖 Analisis con Inteligencia Artificial</h4>
+                <h4>Análisis con inteligencia artificial</h4>
                 <p><strong>Modelo:</strong> Claude 3.5 Sonnet</p>
                 <p><strong>Proveedor:</strong> Anthropic</p>
                 <p><strong>Tipo:</strong> Inteligencia artificial generativa</p>
@@ -313,7 +318,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
 
             {analysisResult.resumen_ejecutivo && (
               <div className="detail-item">
-                <h4>Resumen ejecutivo (Claude AI)</h4>
+                <h4>Resumen ejecutivo</h4>
                 <p>{analysisResult.resumen_ejecutivo}</p>
               </div>
             )}
@@ -321,26 +326,28 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
             <div className="detail-item">
               <h4>Cobertura de medios</h4>
               <p><strong>Cantidad:</strong> {analysisResult.cobertura_medios || 0} medios</p>
-              <p><strong>Descripcion:</strong> Indica cuantos medios de comunicacion publicaron informacion sobre la nota de prensa.</p>
+              <p><strong>Descripción:</strong> Indica cuántos medios de comunicación publicaron información sobre la nota de prensa.</p>
+
             </div>
 
             <div className="detail-item">
-              <h4>Cantidad de emisiones</h4>
-              <p><strong>Total:</strong> {analysisResult.cobertura_emisiones || 0}</p>
-              <p><strong>Descripcion:</strong> Numero de emisiones unicas en radio y television que difundieron la nota.</p>
+             <h4>Cantidad de emisiones</h4>
+             <p><strong>Total:</strong> {analysisResult.cobertura_emisiones || 0}</p>
+             <p><strong>Descripción:</strong> Número de emisiones únicas en radio y televisión que difundieron la nota.</p>
             </div>
 
             <div className="detail-item">
-              <h4>Alcance estimado</h4>
-              <p><strong>Personas impactadas:</strong> {analysisResult.alcance_estimado}</p>
-              <p><strong>Descripcion:</strong> Estimacion del numero total de personas expuestas al mensaje.</p>
+             <h4>Alcance estimado</h4>
+             <p><strong>Personas impactadas:</strong> {analysisResult.alcance_estimado}</p>
+             <p><strong>Descripción:</strong> Estimación del número total de personas expuestas al mensaje.</p>
             </div>
 
             <div className="detail-item">
-              <h4>Duracion en agenda mediatica</h4>
-              <p><strong>Dias activos:</strong> {analysisResult.duracion_dias || 0} dias</p>
-              <p><strong>Descripcion:</strong> Tiempo durante el cual la nota se mantuvo relevante en los medios.</p>
+             <h4>Duración en agenda mediática</h4>
+             <p><strong>Días activos:</strong> {analysisResult.duracion_dias || 0} días</p>
+             <p><strong>Descripción:</strong> Tiempo durante el cual la nota se mantuvo relevante en los medios.</p>
             </div>
+
 
             <MencionesDisplay menciones={analysisResult.menciones?.detalle || []} />
 
@@ -358,17 +365,17 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         )}
       </Modal>
 
-      <Modal isOpen={modalComparar} onClose={() => setModalComparar(false)} title="Comparar con otras notas de prensa" className="modal-descarga-content">
+            <Modal isOpen={modalComparar} onClose={() => setModalComparar(false)} title="Comparación de notas de prensa" className="modal-descarga-content">
         <p className="descarga-message">
-          La funcionalidad de comparacion esta disponible en la version Pro.
+          La funcionalidad de comparación está disponible en la versión Pro.
         </p>
-        <p className="descarga-message">Con la version Pro podras:</p>
+        <p className="descarga-message">Con la versión Pro podrás:</p>
         <ul className="descarga-message" style={{ textAlign: 'left', margin: '20px auto', maxWidth: 500 }}>
-          <li>Comparar multiples analisis de notas de prensa</li>
-          <li>Ver graficos comparativos de metricas</li>
-          <li>Guardar historial de analisis</li>
+          <li>Comparar múltiples análisis de notas de prensa</li>
+          <li>Ver gráficos comparativos de métricas</li>
+          <li>Guardar historial de análisis</li>
           <li>Exportar reportes comparativos en PDF</li>
-          <li>Analisis de prensa escrita y digital</li>
+          <li>Análisis de prensa escrita y digital</li>
         </ul>
         <p className="descarga-message">
           Para acceder a estas funcionalidades, contacte con ventas en:{' '}
@@ -378,9 +385,9 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
           <button
             type="button"
             className="action-btn btn-success"
-            onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre version Pro - Funcionalidad de comparacion', '_blank')}
+            onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro - Funcionalidad de comparación', '_blank')}
           >
-            📧 Contactar para version Pro
+            📧 Contactar para versión Pro
           </button>
           <button type="button" className="action-btn btn-primary" onClick={() => setModalComparar(false)}>
             Volver
@@ -388,29 +395,44 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         </div>
       </Modal>
 
-      <Modal isOpen={modalDescarga} onClose={() => setModalDescarga(false)} title="Descargar informe de analisis" className="modal-descarga-content">
-        <p className="descarga-message">
-          Se va a descargar el informe de la version gratuita con datos basicos de impacto de su nota de prensa.
-        </p>
-        <p className="descarga-message">
-          Para un informe completo y funcionalidades Pro, contacte con ventas en:{' '}
-          <strong>contacto@icc-e.org</strong>
-        </p>
-        <div className="descarga-actions">
-          <button type="button" className="action-btn btn-primary" onClick={handleDescargarBasico}>
-            📄 Descargar informe basico
-          </button>
-          <button
-            type="button"
-            className="action-btn btn-success"
-            onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre version Pro', '_blank')}
-          >
-            ⭐ Ver version Pro
-          </button>
-        </div>
+
+              <Modal isOpen={modalDescarga} onClose={() => setModalDescarga(false)} title="Descarga del informe" className="modal-descarga-content">
+          <p className="descarga-message">
+            Se va a descargar el informe de la versión gratuita con datos básicos de impacto de su nota de prensa.
+          </p>
+          <p className="descarga-message">
+            Para un informe completo y funcionalidades Pro, contacte con ventas en:{' '}
+            <strong>contacto@icc-e.org</strong>
+          </p>
+          <div className="descarga-actions">
+            <button type="button" className="action-btn btn-primary" onClick={handleDescargarBasico}>
+              📄 Descargar informe básico
+            </button>
+            <button
+              type="button"
+              className="action-btn btn-success"
+              onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro', '_blank')}
+            >
+              ⭐ Ver versión Pro
+            </button>
+          </div>
+        </Modal>
+
+      <Modal
+        isOpen={error !== null}
+        onClose={() => setError(null)}
+        title="Aviso de error"
+      >
+        <p className="whitespace-pre-line">{error}</p>
+        <button 
+          onClick={() => setError(null)}
+          className="action-btn btn-primary"
+        >
+          Entendido
+        </button>
       </Modal>
+      
     </div>
   );
 }
-
 export default App;
