@@ -80,6 +80,8 @@ input[type="text"], input[type="date"] {
     font-size: 0.95em;
     transition: all 0.3s ease;
     background-color: #f7fafc;
+    color: #2d3748;
+    color-scheme: light;
 }
 
 input[type="text"]:focus, input[type="date"]:focus {
@@ -164,6 +166,7 @@ form button[type="submit"]:active {
     margin-bottom: 12px;
     padding: 12px;
     background-color: #f7fafc;
+    color: #2d3748;
     border-radius: 8px;
     border-left: 4px solid #667eea;
 }
@@ -381,6 +384,7 @@ form button[type="submit"]:active {
 
 .detail-item {
     background-color: #f7fafc;
+    color: #2d3748;
     padding: 15px;
     margin: 12px 0;
     border-radius: 10px;
@@ -409,6 +413,7 @@ form button[type="submit"]:active {
     text-align: center;
     padding: 20px;
     background-color: #f7fafc;
+    color: #2d3748;
     border-radius: 10px;
     margin: 15px 0;
 }
@@ -445,6 +450,7 @@ form button[type="submit"]:active {
     text-align: center;
     padding: 10px;
     background-color: #f7fafc;
+    color: #2d3748;
     border-radius: 8px;
 }
 
@@ -518,6 +524,7 @@ form button[type="submit"]:active {
     font-size: 1.05em;
     padding: 12px;
     background-color: #f7fafc;
+    color: #2d3748;
     border-radius: 8px;
     border-left: 3px solid #3d944c;
 }
@@ -673,6 +680,7 @@ form button[type="submit"]:active {
 
 .contexto-item {
   background-color: #f7fafc;
+    color: #2d3748;
   padding: 12px;
   margin: 8px 0;
   border-left: 4px solid #667eea;
