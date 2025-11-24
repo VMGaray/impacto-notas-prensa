@@ -168,7 +168,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
             <p className="auth-switch">
               ¿No tienes cuenta?{' '}
               <span onClick={switchMode} className="auth-link">
-                Registrate aquí
+                Regístrate aquí
               </span>
             </p>
           </form>
@@ -237,7 +237,7 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess }: AuthModalProps) =>
             <p className="auth-switch">
               ¿Ya tienes cuenta?{' '}
               <span onClick={switchMode} className="auth-link">
-                Inicia sesion aqui
+                Inicia sesión aquí
               </span>
             </p>
           </form>

@@ -24,7 +24,7 @@ function App() {
     if (!id) {
       id = crypto.randomUUID();
       sessionStorage.setItem('idSesion', id);
-      console.log('ID de sesion generado:', id);
+      console.log('ID de sesión generado:', id);
     }
     setSessionId(id);
   }, []);
@@ -186,7 +186,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
             Ingresa los datos de tu comunicación para ver su repercusión en medios canarios.
           </p>
           <small className="freemium-note">
-            Está utilizando la versión gratuita que consulta menciones de radio y television en Canarias en los últimos 3 días.
+            Está utilizando la versión gratuita que consulta menciones de radio y televisión en Canarias en los últimos 3 días.
           </small>
 
           <form onSubmit={handleSubmit}>
