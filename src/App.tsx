@@ -4,6 +4,7 @@ import type { AnalysisResult } from './types';
 import { Modal } from './components/Modal';
 import { MetricsDisplay } from './components/MetricsDisplay';
 import { MencionesDisplay } from './components/MencionesDisplay';
+import { AuthModal } from './components/AuthModal';
 
 function App() {
   const [sessionId, setSessionId] = useState<string>('');
@@ -18,6 +19,7 @@ function App() {
   const [modalComparar, setModalComparar] = useState(false);
   const [modalDescarga, setModalDescarga] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalAuth, setModalAuth] = useState(false);
 
   useEffect(() => {
     let id = sessionStorage.getItem('idSesion');
@@ -183,10 +185,11 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
       {showForm && (
         <>
           <p className="subtitle">
-            Ingresa los datos de tu comunicación para ver su repercusión en medios canarios.
+            Analiza GRATIS el impacto de tu última nota de prensa en radio y televisión canaria.<br />
+            
           </p>
           <small className="freemium-note">
-            Está utilizando la versión gratuita que consulta menciones de radio y televisión en Canarias en los últimos 3 días.
+            Primera consulta gratuita • Sin registro necesario
           </small>
 
           <form onSubmit={handleSubmit}>
@@ -225,7 +228,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
               />
             </div>
 
-            <button type="submit">Evaluar repercusión</button>
+            <button type="submit">Analizar mi nota de prensa</button>
           </form>
         </>
       )}
@@ -239,10 +242,24 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
       {showResults && analysisResult && (
         <div id="results">
           <h2>Resultados del análisis</h2>
-          <p className="freemium-note">
-            Versión gratuita<br />
-            (Radio y televisión en Canarias, últimos 3 días)
-          </p>
+
+          <div className="query-limit-banner">
+            <h3>Te quedan 0 consultas gratuitas hoy</h3>
+            <p>Crea tu cuenta gratis para:</p>
+            <ul>
+              <li>3 análisis diarios</li>
+              <li>Historial de análisis</li>
+              <li>Comparativas entre fechas</li>
+            </ul>
+            <div className="banner-actions">
+              <button className="btn-banner-primary" onClick={() => setModalAuth(true)}>
+                Crear cuenta - 30 segundos
+              </button>
+              <button className="btn-banner-primary">
+                Ver planes Pro
+              </button>
+            </div>
+          </div>
 
           {analysisResult.ai_model === 'claude-3.5-sonnet' && analysisResult.ai_provider === 'anthropic' && (
             <div className="ai-badge">
@@ -431,7 +448,15 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
           Entendido
         </button>
       </Modal>
-      
+
+      <AuthModal
+        isOpen={modalAuth}
+        onClose={() => setModalAuth(false)}
+        onAuthSuccess={(userId) => {
+          console.log('Usuario autenticado:', userId);
+          setModalAuth(false);
+        }}
+      />
     </div>
   );
 }
