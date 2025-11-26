@@ -1,0 +1,605 @@
+{
+  "name": "impacto-notas-prensa-DETERMINISTA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0c67f547-a6b6-431a-9368-68dd2d8a4a8b-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        -144
+      ],
+      "id": "d14f0f8d-9995-4aa5-bfde-e8858deb6195",
+      "name": "Webhook",
+      "webhookId": "0c67f547-a6b6-431a-9368-68dd2d8a4a8b-test"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7f160608-a0d4-48c9-a7be-77433bc47ab8",
+              "leftValue": "`{{ $json.user_id }}`",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -128
+      ],
+      "id": "9005cb1f-e329-423e-af88-6d82d8cb6db5",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nreturn [{\n  json: {\n    ...items[0].json,\n    today_iso: today.toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        128
+      ],
+      "id": "70529eee-f730-4385-b63c-162fda51aad1",
+      "name": "Calcular Fecha de Hoy"
+    },
+    {
+      "parameters": {
+        "url": "https://bypxqpsgeactmjmikvxr.supabase.co/rest/v1/user_queries",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "created_at",
+              "value": "gte.{{ $json.today_iso }}"
+            },
+            {
+              "name": "select",
+              "value": "id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        48,
+        192
+      ],
+      "id": "e1c3f5a7-cc95-4c0c-ac47-518d69eb650a",
+      "name": "HTTP Request Verificar Límites"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst queryResults = items[0].json;\n\nlet count = 0;\n\nif (Array.isArray(queryResults)) {\n  count = queryResults.length;\n}\n\nconst MAX_QUERIES = 10;\nconst remaining = MAX_QUERIES - count;\n\nreturn [{\n  json: {\n    queriesCount: count,\n    remainingQueries: remaining,\n    canContinue: remaining > 0,\n    user_id: items[0].json.user_id,\n    organizacion: items[0].json.body?.organizacion,\n    tema: items[0].json.body?.tema,\n    fecha: items[0].json.body?.fecha,\n    body: items[0].json.body\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "id": "fea963a2-0708-43e7-b188-c3372483fdc0",
+      "name": "Contar Resultados"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "158fdc43-0c43-4930-835e-aa6cc2d6394e",
+              "leftValue": "={{ $json.canContinue }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        384
+      ],
+      "id": "00977ce7-1a87-4ebd-8478-fe4364557438",
+      "name": "If1 ¿Puede Continuar?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bypxqpsgeactmjmikvxr.supabase.co/rest/v1/user_queries",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "organizacion",
+              "value": "={{ $json.organizacion }}"
+            },
+            {
+              "name": "tema",
+              "value": "={{ $json.tema }}"
+            },
+            {
+              "name": "fecha",
+              "value": "={{ $json.fecha }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        320
+      ],
+      "id": "2cc741e9-ddd2-45f1-bbe3-8275f4037b48",
+      "name": "HTTP Request Registrar Consulta"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Límite de consultas alcanzado\",\n  \"message\": \"Has alcanzado el límite de 10 consultas diarias. Vuelve mañana o actualiza a Pro.\",\n  \"remainingQueries\": 0,\n  \"maxQueries\": 10\n}",
+        "options": {
+          "responseCode": 429
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        528
+      ],
+      "id": "b7153b80-df43-4af5-846d-ed451d1132b0",
+      "name": "Error Límite Alcanzado"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos del webhook\nconst body = $input.first().json.body;\n\nconst organizacion = body.organizacion || \"N/A\";\nconst tema = body.tema || \"N/A\";\nconst fecha = body.fecha || \"N/A\";\n\nconsole.log(\"════════════════════════════════════════\");\nconsole.log(\"📝 PREPARAR BÚSQUEDA EN SUPABASE\");\nconsole.log(\"Organización:\", organizacion);\nconsole.log(\"Tema:\", tema);\nconsole.log(\"Fecha:\", fecha);\n\n// Crear query de búsqueda (lo más específica posible)\nconst searchQuery = `${organizacion} ${tema}`;\n\nconsole.log(\"✅ Query de búsqueda:\", searchQuery);\nconsole.log(\"════════════════════════════════════════\\n\");\n\nreturn {\n  organizacion: organizacion,\n  tema: tema,\n  fecha: fecha,\n  search_query: searchQuery,\n  body: body\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -128
+      ],
+      "id": "5e96e7e4-824f-4074-8d4a-01ba2a3c772b",
+      "name": "PrepararBusqueda"
+    },
+    {
+      "parameters": {
+        "url": "https://bypxqpsgeactmjmikvxr.supabase.co/rest/v1/tripadvisor",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "content",
+              "value": "ilike.*{{ $json.search_query }}*"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        -128
+      ],
+      "id": "nuevo-busqueda-supabase",
+      "name": "Buscar en Supabase (SQL Determinista)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos de nodos anteriores\nconst searchResults = $input.all();\nconst prepNode = $('PrepararBusqueda').first().json;\n\nconst organizacion = prepNode.organizacion;\nconst tema = prepNode.tema;\nconst fecha = prepNode.fecha;\n\nconsole.log(\"════════════════════════════════════════\");\nconsole.log(\"📊 PROCESANDO DATOS REALES DE SUPABASE\");\n\n// Procesar resultados de Supabase\nlet menciones = [];\n\n// Si searchResults es un array en el primer item\nif (searchResults.length > 0 && searchResults[0].json) {\n  const data = searchResults[0].json;\n  if (Array.isArray(data)) {\n    menciones = data;\n  } else if (data.content) {\n    menciones = [data];\n  }\n}\n\nconsole.log(\"Total registros encontrados:\", menciones.length);\n\nlet radioCount = 0;\nlet tvCount = 0;\nconst detallesMenciones = [];\nconst mediosSet = new Set();\n\nmenciones.forEach(item => {\n  const medio = item.medio || item.tipo_medio || '';\n  const nombreMedio = item.nombre_medio || item.medio || 'Desconocido';\n  \n  // Contar por tipo\n  const medioUpper = medio.toUpperCase();\n  if (medioUpper.includes('RADIO')) radioCount++;\n  if (medioUpper.includes('TV') || medioUpper.includes('TELEVISION') || medioUpper.includes('TELEVISIÓN')) tvCount++;\n  \n  mediosSet.add(nombreMedio);\n  \n  detallesMenciones.push({\n    medio: nombreMedio,\n    tipo: medio,\n    fecha: item.fecha || item.created_at || fecha,\n    extracto: item.content ? item.content.substring(0, 150) + '...' : 'Sin contenido'\n  });\n});\n\nconst totalMenciones = menciones.length;\nconst mediosUnicos = mediosSet.size;\n\nconsole.log(`Radio: ${radioCount}, TV: ${tvCount}, Total: ${totalMenciones}, Medios únicos: ${mediosUnicos}`);\n\n// Crear prompt con DATOS REALES Y CONCRETOS\nconst promptConDatos = `Eres un analista de medios profesional. Analiza la siguiente cobertura mediática REAL.\n\nCONSULTA:\n- Organización: ${organizacion}\n- Tema: ${tema}\n- Fecha: ${fecha}\n\nDATOS REALES EXTRAÍDOS DE LA BASE DE DATOS:\n- Total de menciones encontradas: ${totalMenciones}\n- Medios únicos que cubrieron: ${mediosUnicos}\n- Menciones en RADIO: ${radioCount}\n- Menciones en TELEVISIÓN: ${tvCount}\n\nDETALLE DE CADA MENCIÓN:\n${JSON.stringify(detallesMenciones, null, 2)}\n\nINSTRUCCIONES CRÍTICAS:\n1. USA EXACTAMENTE estos números en el análisis:\n   - cobertura_medios: ${mediosUnicos}\n   - cobertura_radio: ${radioCount}\n   - cobertura_tv: ${tvCount}\n   - cobertura_emisiones: ${totalMenciones}\n   - menciones.total: ${totalMenciones}\n\n2. NO INVENTES ni cambies estos números\n3. Si total_menciones = 0, indica que no se encontró cobertura para este tema\n4. Genera recomendaciones específicas basadas en los datos reales\n5. El campo menciones.detalle debe incluir los ${totalMenciones} registros del detalle provisto\n6. Calcula alcance_estimado basándote en los medios reales encontrados\n7. resultado_global debe reflejar si la cobertura fue exitosa o no basándose en los números reales`;\n\nconsole.log(\"✅ Prompt con datos reales generado\");\nconsole.log(\"════════════════════════════════════════\\n\");\n\nreturn {\n  prompt: promptConDatos,\n  organizacion: organizacion,\n  tema: tema,\n  fecha: fecha,\n  total_menciones: totalMenciones,\n  radio_count: radioCount,\n  tv_count: tvCount,\n  medios_unicos: mediosUnicos,\n  menciones_detalle: detallesMenciones,\n  body: prepNode.body\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -128
+      ],
+      "id": "nuevo-formatear-datos",
+      "name": "Formatear Datos Reales"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Eres un analista de medios profesional. Debes usar EXACTAMENTE los números proporcionados en el prompt. NO inventes datos.",
+          "maxIterations": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        -128
+      ],
+      "id": "3f37d132-26e8-44c9-987a-13967b5653be",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        32
+      ],
+      "id": "d6d9710d-2390-454d-b0e2-65c2bbb5f55f",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UmtxKX16IttvwPRb",
+          "name": "OpenRouter - VictoriaMGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"resumen_ejecutivo\": {\n      \"type\": \"string\",\n      \"description\": \"Análisis profesional de 2-3 frases sobre el rendimiento general.\"\n    },\n    \"impacto\": {\n      \"type\": \"string\",\n      \"description\": \"Descripción del impacto mediático logrado, mencionando cifras.\"\n    },\n    \"nombre_publicacion\": {\n      \"type\": \"string\",\n      \"description\": \"El tema de la nota de prensa.\"\n    },\n    \"id\": {\n      \"type\": \"string\",\n      \"description\": \"Un ID único para el análisis, ej: 'analisis-YYYY-MM-DD'.\"\n    },\n    \"cobertura_medios\": {\n      \"type\": \"number\",\n      \"description\": \"Total de medios únicos (usar el número exacto proporcionado).\"\n    },\n    \"cobertura_radio\": {\n      \"type\": \"number\",\n      \"description\": \"Total de menciones de radio (usar número exacto).\"\n    },\n    \"cobertura_tv\": {\n      \"type\": \"number\",\n      \"description\": \"Total de menciones de televisión (usar número exacto).\"\n    },\n    \"cobertura_emisiones\": {\n      \"type\": \"number\",\n      \"description\": \"Total de emisiones/menciones (usar número exacto).\"\n    },\n    \"menciones\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"total\": {\n          \"type\": \"number\",\n          \"description\": \"Cantidad total de menciones (usar número exacto).\"\n        },\n        \"detalle\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"medio\": {\n                \"type\": \"string\",\n                \"description\": \"Nombre del medio que realizó la mención.\"\n              },\n              \"tipo\": {\n                \"type\": \"string\",\n                \"description\": \"Tipo de medio (radio, tv).\"\n              },\n              \"fecha\": {\n                \"type\": \"string\",\n                \"description\": \"Fecha de la mención (formato: YYYY-MM-DD).\"\n              },\n              \"extracto\": {\n                \"type\": \"string\",\n                \"description\": \"Breve extracto de la mención.\"\n              }\n            },\n            \"required\": [\"medio\", \"tipo\", \"fecha\"]\n          },\n          \"description\": \"Lista detallada de menciones (usar datos proporcionados).\"\n        }\n      },\n      \"required\": [\"total\", \"detalle\"],\n      \"description\": \"Información sobre las menciones.\"\n    },\n    \"alcance_estimado\": {\n      \"type\": \"string\",\n      \"description\": \"Cifra de alcance estimado basada en medios reales.\"\n    },\n    \"duracion_dias\": {\n      \"type\": \"number\",\n      \"description\": \"Duración de la cobertura en días.\"\n    },\n    \"rango_fechas\": {\n      \"type\": \"string\",\n      \"description\": \"Rango de fechas de la cobertura.\"\n    },\n    \"resultado_global\": {\n      \"type\": \"string\",\n      \"description\": \"Veredicto final basado en números reales.\"\n    },\n    \"recomendaciones\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Lista de 3 recomendaciones específicas.\"\n    },\n    \"analisis\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"cobertura\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        },\n        \"emisiones\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        },\n        \"duracion\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        }\n      },\n      \"required\": [\"cobertura\", \"emisiones\", \"duracion\"]\n    }\n  },\n  \"required\": [\n    \"resumen_ejecutivo\",\n    \"impacto\",\n    \"nombre_publicacion\",\n    \"id\",\n    \"cobertura_medios\",\n    \"cobertura_radio\",\n    \"cobertura_tv\",\n    \"cobertura_emisiones\",\n    \"menciones\",\n    \"alcance_estimado\",\n    \"duracion_dias\",\n    \"rango_fechas\",\n    \"resultado_global\",\n    \"recomendaciones\",\n    \"analisis\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        32
+      ],
+      "id": "57c76ce6-ba3f-4870-ad18-033466c59c1b",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        128
+      ],
+      "id": "199298ea-15ae-4034-8100-9e8802ce0ea5",
+      "name": "OpenRouter Chat Model Parser",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UmtxKX16IttvwPRb",
+          "name": "OpenRouter - VictoriaMGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1200,
+        -128
+      ],
+      "id": "b9291a0c-e61b-4607-9744-1876d066be33",
+      "name": "Respond Success Usuario Anónimo"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        944,
+        368
+      ],
+      "id": "5b23d178-1252-4030-ac9f-7fc637567a40",
+      "name": "Respond Success Usuario Registrado"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "PrepararBusqueda",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calcular Fecha de Hoy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Fecha de Hoy": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Verificar Límites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Verificar Límites": {
+      "main": [
+        [
+          {
+            "node": "Contar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contar Resultados": {
+      "main": [
+        [
+          {
+            "node": "If1 ¿Puede Continuar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1 ¿Puede Continuar?": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Registrar Consulta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Límite Alcanzado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Registrar Consulta": {
+      "main": [
+        [
+          {
+            "node": "PrepararBusqueda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepararBusqueda": {
+      "main": [
+        [
+          {
+            "node": "Buscar en Supabase (SQL Determinista)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar en Supabase (SQL Determinista)": {
+      "main": [
+        [
+          {
+            "node": "Formatear Datos Reales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Datos Reales": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond Success Usuario Anónimo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond Success Usuario Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model Parser": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "nuevo-determinista",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c82b6d82c5e68698f04eb90aff26f6d518213142c432a723c8b2a1070d31f483"
+  },
+  "id": "nuevo-determinista",
+  "tags": []
+}

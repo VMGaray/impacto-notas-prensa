@@ -1,0 +1,646 @@
+{
+  "name": "impacto-notas-prensa",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0c67f547-a6b6-431a-9368-68dd2d8a4a8b",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        -144
+      ],
+      "id": "d14f0f8d-9995-4aa5-bfde-e8858deb6195",
+      "name": "Webhook",
+      "webhookId": "0c67f547-a6b6-431a-9368-68dd2d8a4a8b"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        512,
+        96
+      ],
+      "id": "d6d9710d-2390-454d-b0e2-65c2bbb5f55f",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UmtxKX16IttvwPRb",
+          "name": "OpenRouter - VictoriaMGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }} Necesito que consultes a que medio se asocia cada mencion, que puede ser RADIO y TELEVISION unicamente",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        -128
+      ],
+      "id": "3f37d132-26e8-44c9-987a-13967b5653be",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca coincidencias de la query ** es importante que me devuelvas el tipo de medio AL CUAL SE ASOCIA LA COINCIDENCIA ya se RADIO o TELEVISION",
+        "tableName": {
+          "__rl": true,
+          "value": "=tripadvisor",
+          "mode": "id"
+        },
+        "topK": 10,
+        "includeDocumentMetadata": false,
+        "options": {
+          "queryName": "match_tripadvisor_docs"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        64
+      ],
+      "id": "ab687dca-660c-4db7-95f9-b104b76b9c6d",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "waoDaa3hHgn3hzGe",
+          "name": "Supabase VictoriaGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.id_sesion }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        112
+      ],
+      "id": "98439910-527a-4d33-9a7f-dad2b30d8e91",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        224
+      ],
+      "id": "f2711499-ae1b-40bf-9997-996e53644b13",
+      "name": "OpenAiRodri",
+      "credentials": {
+        "openAiApi": {
+          "id": "55IIfEh36CIf4yYI",
+          "name": "OpenAi VictoriaGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"resumen_ejecutivo\": {\n      \"type\": \"string\",\n      \"description\": \"Análisis profesional de 2-3 frases sobre el rendimiento general.\"\n    },\n    \"impacto\": {\n      \"type\": \"string\",\n      \"description\": \"Descripción del impacto mediático logrado, mencionando cifras.\"\n    },\n    \"nombre_publicacion\": {\n      \"type\": \"string\",\n      \"description\": \"El tema de la nota de prensa.\"\n    },\n    \"id\": {\n      \"type\": \"string\",\n      \"description\": \"Un ID único para el análisis, ej: 'analisis-YYYY-MM-DD'.\"\n    },\n    \"cobertura_medios\": {\n      \"type\": \"number\",\n      \"description\": \"Total de noticias encontradas.\"\n    },\n    \"cobertura_radio\": {\n      \"type\": \"number\",\n      \"description\": \"Total de noticias de radio.\"\n    },\n    \"cobertura_tv\": {\n      \"type\": \"number\",\n      \"description\": \"Total de noticias de televisión.\"\n    },\n    \"cobertura_emisiones\": {\n      \"type\": \"number\",\n      \"description\": \"Total de emisiones únicas que cubrieron la noticia.\"\n    },\n    \"menciones\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"total\": {\n          \"type\": \"number\",\n          \"description\": \"Cantidad total de menciones realizadas.\"\n        },\n        \"detalle\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"medio\": {\n                \"type\": \"string\",\n                \"description\": \"Nombre del medio que realizó la mención.\"\n              },\n              \"tipo\": {\n                \"type\": \"string\",\n                \"description\": \"Tipo de medio (radio, tv, digital, prensa escrita).\"\n              },\n              \"fecha\": {\n                \"type\": \"string\",\n                \"description\": \"Fecha de la mención (formato: YYYY-MM-DD).\"\n              },\n              \"extracto\": {\n                \"type\": \"string\",\n                \"description\": \"Breve extracto o contexto de la mención (opcional).\"\n              }\n            },\n            \"required\": [\"medio\", \"tipo\", \"fecha\"]\n          },\n          \"description\": \"Lista detallada de cada mención realizada.\"\n        }\n      },\n      \"required\": [\"total\", \"detalle\"],\n      \"description\": \"Información sobre las menciones realizadas por los medios.\"\n    },\n    \"alcance_estimado\": {\n      \"type\": \"string\",\n      \"description\": \"Cifra de alcance estimado (ej: '120000 personas').\"\n    },\n    \"duracion_dias\": {\n      \"type\": \"number\",\n      \"description\": \"Duración de la cobertura en días.\"\n    },\n    \"rango_fechas\": {\n      \"type\": \"string\",\n      \"description\": \"Rango de fechas legible de la cobertura, ej: '(10 - 12 nov 2025)'.\"\n    },\n    \"resultado_global\": {\n      \"type\": \"string\",\n      \"description\": \"Veredicto final (ej. 'Funcionó bastante bien', 'Funcionó excelentemente').\"\n    },\n    \"recomendaciones\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Lista de 3 recomendaciones únicas, específicas y accionables.\"\n    },\n    \"analisis\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"cobertura\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        },\n        \"emisiones\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        },\n        \"duracion\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"color\": {\n              \"type\": \"string\",\n              \"description\": \"Color de evaluación (verde, amarillo, rojo).\"\n            }\n          },\n          \"required\": [\"color\"]\n        }\n      },\n      \"required\": [\"cobertura\", \"emisiones\", \"duracion\"]\n    }\n  },\n  \"required\": [\n    \"resumen_ejecutivo\",\n    \"impacto\",\n    \"nombre_publicacion\",\n    \"id\",\n    \"cobertura_medios\",\n    \"cobertura_radio\",\n    \"cobertura_tv\",\n    \"cobertura_emisiones\",\n    \"menciones\",\n    \"alcance_estimado\",\n    \"duracion_dias\",\n    \"rango_fechas\",\n    \"resultado_global\",\n    \"recomendaciones\",\n    \"analisis\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1264,
+        48
+      ],
+      "id": "57c76ce6-ba3f-4870-ad18-033466c59c1b",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        224
+      ],
+      "id": "199298ea-15ae-4034-8100-9e8802ce0ea5",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UmtxKX16IttvwPRb",
+          "name": "OpenRouter - VictoriaMGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        672,
+        112
+      ],
+      "id": "1e30640b-013b-43fe-b4e9-b2c67ed46978",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UmtxKX16IttvwPRb",
+          "name": "OpenRouter - VictoriaMGaray"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos del webhook\nconst body = $input.first().json.body;\n\nconst organizacion = body.organizacion || \"N/A\";\nconst tema = body.tema || \"N/A\";\nconst fecha = body.fecha || \"N/A\";\n\nconsole.log(\"════════════════════════════════════════\");\nconsole.log(\"📝 PREPARAR PROMPT PARA AI AGENT\");\nconsole.log(\"Organización:\", organizacion);\nconsole.log(\"Tema:\", tema);\nconsole.log(\"Fecha:\", fecha);\n\n// Crear el prompt como texto\nconst promptTexto = `Analiza ${tema} de la organización ${organizacion} en la fecha ${fecha} Tu tarea es generar un analisis profesional basado en los datos de cobertura disponibles solo en Supabase y no uses datos de ningun otro lado.En el caso de no encontrar informacion dentro de Supabase devuelve un mensaje con el mismo formato, informando que no hay informacion sobre ese tema. IMPORTANTE solamente trae informacion de RADIO y TELEVISION`;\n\nconsole.log(\"✅ Prompt generado:\", promptTexto);\nconsole.log(\"════════════════════════════════════════\\n\");\n\n// Devolver el prompt y los datos originales\nreturn {\n  prompt: promptTexto,\n  organizacion: organizacion,\n  tema: tema,\n  fecha: fecha,\n  body: body // Mantener el body original por si otros nodos lo necesitan\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -128
+      ],
+      "id": "5e96e7e4-824f-4074-8d4a-01ba2a3c772b",
+      "name": "PrepararPrompt"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7f160608-a0d4-48c9-a7be-77433bc47ab8",
+              "leftValue": "=`{{ $json.user_id }}`",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -128
+      ],
+      "id": "9005cb1f-e329-423e-af88-6d82d8cb6db5",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\n  today.setHours(0, 0, 0, 0);\n\n  return [{\n    json: {\n      ...items[0].json,\n      today_iso: today.toISOString()\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        128
+      ],
+      "id": "70529eee-f730-4385-b63c-162fda51aad1",
+      "name": "Calcular Fecha de Hoy"
+    },
+    {
+      "parameters": {
+        "url": "https://bypxqpsgeactmjmikvxr.supabase.co/rest/v1/user_queries",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "created_at",
+              "value": "={{ $json.today_iso }}"
+            },
+            {
+              "name": "select",
+              "value": "id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFu       b24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIi       wicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        48,
+        192
+      ],
+      "id": "e1c3f5a7-cc95-4c0c-ac47-518d69eb650a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n  const queryResults = items[0].json; // Array de resultados de Supabase\n\n  let count = 0;\n\n  if (Array.isArray(queryResults)) {\n    count = queryResults.length;\n  }\n\n  const MAX_QUERIES = 10;\n  const remaining = MAX_QUERIES - count;\n\n  return [{\n    json: {\n      queriesCount: count,\n      remainingQueries: remaining,\n      canContinue: remaining > 0,\n      user_id: items[0].json.user_id,\n      organizacion: items[0].json.organizacion,\n      tema: items[0].json.tema,\n      fecha: items[0].json.fecha\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "id": "fea963a2-0708-43e7-b188-c3372483fdc0",
+      "name": "Contar Resultados y Calcular Restantes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "158fdc43-0c43-4930-835e-aa6cc2d6394e",
+              "leftValue": "={{ $json.canContinue }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        384
+      ],
+      "id": "00977ce7-1a87-4ebd-8478-fe4364557438",
+      "name": "If1 ¿Puede Continuar?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bypxqpsgeactmjmikvxr.supabase.co/rest/v1/user_queries",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIiwicm9sZSI6ImFu       b24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cHhxcHNnZWFjdG1qbWlrdnhyIi       wicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNTM4MDUsImV4cCI6MjA2ODkyOTgwNX0.XMyPF4oSKB13EwFmH8KwSkh1LjPWxTuC3KohKe_29RY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.user_id }}"
+            },
+            {
+              "name": "organizacion",
+              "value": "={{ $json.organizacion }}"
+            },
+            {
+              "name": "tema",
+              "value": "={{ $json.tema }}"
+            },
+            {
+              "name": "fecha",
+              "value": "={{ $json.fecha }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        320
+      ],
+      "id": "2cc741e9-ddd2-45f1-bbe3-8275f4037b48",
+      "name": "HTTP Request1 Registrar Consulta (TRUE)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Límite de consultas alcanzado\",\n  \"message\": \"Has alcanzado el límite de 10 consultas diarias. Vuelve mañana o actualiza a Pro.\",\n  \"remainingQueries\": 0,\n  \"maxQueries\": 10\n}\n",
+        "options": {
+          "responseCode": 429
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        528
+      ],
+      "id": "b7153b80-df43-4af5-846d-ed451d1132b0",
+      "name": "Error (FALSE)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        944,
+        368
+      ],
+      "id": "5b23d178-1252-4030-ac9f-7fc637567a40",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1168,
+        -144
+      ],
+      "id": "b9291a0c-e61b-4607-9744-1876d066be33",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAiRodri": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "PrepararPrompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "PrepararPrompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calcular Fecha de Hoy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Fecha de Hoy": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Contar Resultados y Calcular Restantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contar Resultados y Calcular Restantes": {
+      "main": [
+        [
+          {
+            "node": "If1 ¿Puede Continuar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1 ¿Puede Continuar?": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1 Registrar Consulta (TRUE)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error (FALSE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error (FALSE)": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request1 Registrar Consulta (TRUE)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cf6585ca-631e-4bee-8cd7-9f411df7265b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c82b6d82c5e68698f04eb90aff26f6d518213142c432a723c8b2a1070d31f483"
+  },
+  "id": "Y3U5O8frwga8J4E7",
+  "tags": []
+}
