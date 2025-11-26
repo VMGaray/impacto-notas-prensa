@@ -11,7 +11,7 @@ import {
   registerAnonymousQuery,
   checkAuthenticatedQueryLimit,
   registerAuthenticatedQuery
-} from "../lib/fingerprintService";
+} from "./lib/fingerprintService";
 
 function App() {
   const { user, userPlan } = useAuth();
