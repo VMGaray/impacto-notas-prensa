@@ -5,16 +5,8 @@ import { Modal } from './components/Modal';
 import { MetricsDisplay } from './components/MetricsDisplay';
 import { MencionesDisplay } from './components/MencionesDisplay';
 import { AuthModal } from './components/AuthModal';
-import { useAuth } from './contexts/AuthContext';
-import {
-  checkAnonymousQueryLimit,
-  registerAnonymousQuery,
-  checkAuthenticatedQueryLimit,
-  registerAuthenticatedQuery
-} from '../lib/fingerprintService';
 
 function App() {
-  const { user, userPlan } = useAuth();
   const [sessionId, setSessionId] = useState<string>('');
   const [organizacion, setOrganizacion] = useState('');
   const [tema, setTema] = useState('');
@@ -28,9 +20,6 @@ function App() {
   const [modalDescarga, setModalDescarga] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalAuth, setModalAuth] = useState(false);
-  const [remainingQueries, setRemainingQueries] = useState(3);
-  const [showBanner, setShowBanner] = useState(false);
-  const [supabaseConfigured, setSupabaseConfigured] = useState(true);
 
   useEffect(() => {
     let id = sessionStorage.getItem('idSesion');
@@ -40,184 +29,87 @@ function App() {
       console.log('ID de sesión generado:', id);
     }
     setSessionId(id);
-
-    // Verificar si Supabase está configurado
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const configured = !!(url && key && !url.includes('tu-proyecto') && !key.includes('tu-anon-key'));
-    setSupabaseConfigured(configured);
-
-    if (!configured) {
-      console.warn('⚠️ Supabase no está configurado. Usando localStorage como fallback temporal.');
-    }
   }, []);
-
-  useEffect(() => {
-    // Verificar límites de consultas cuando cambie el usuario
-    checkQueryLimits();
-  }, [user, userPlan]);
-
-  useEffect(() => {
-    // Verificar límites al cargar la página inicialmente
-    checkQueryLimits();
-  }, []);
-
-  const checkQueryLimits = async () => {
-    if (user) {
-      // Usuario autenticado
-      const limits = await checkAuthenticatedQueryLimit(user.id, userPlan);
-      setRemainingQueries(limits.remainingQueries);
-    } else {
-      // Usuario anónimo
-      const limits = await checkAnonymousQueryLimit();
-      setRemainingQueries(limits.remainingQueries);
-    }
-  };
 
   const ensureNumber = (val: any): number => {
     const num = Number(val);
     return typeof num === 'number' && !isNaN(num) ? num : 0;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  const WEBHOOK_URL = "https://n8n.icc-e.org/webhook/0c67f547-a6b6-431a-9368-68dd2d8a4a8b";
+  const data = { organizacion, tema, fecha, id_sesion: sessionId };
 
-    // Verificar límites antes de permitir la consulta
-    if (user) {
-      const limits = await checkAuthenticatedQueryLimit(user.id, userPlan);
-      if (!limits.canQuery) {
-        setModalAuth(true);
-        return;
-      }
-    } else {
-      // Para usuarios anónimos, verificar límites en la base de datos
-      console.log('[handleSubmit] Verificando límites - remainingQueries:', remainingQueries);
-      const limits = await checkAnonymousQueryLimit();
-      console.log('[handleSubmit] Límites desde BD:', limits);
-      if (!limits.canQuery) {
-        console.log('[handleSubmit] No puede hacer consultas - mostrando modal de autenticación');
-        setModalAuth(true);
-        return;
-      }
+  setLoading(true);
+  setShowResults(false);
+  setError(null); 
+
+  try {
+    console.log('Enviando datos al webhook:', data);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    console.log('Respuesta HTTP:', response.status);
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}`);
     }
 
-    const WEBHOOK_URL = "https://n8n.icc-e.org/webhook/0c67f547-a6b6-431a-9368-68dd2d8a4a8b";
+    const text = await response.text();
+    console.log('Respuesta del servidor:', text.substring(0, 200));
 
-    // Agregar user_id si el usuario está autenticado
-    const data: any = {
-      organizacion,
-      tema,
-      fecha,
-      id_sesion: sessionId,
-      user_id: user ? user.id : null  // Enviar user_id o null
-    };
+    if (!text) throw new Error('Respuesta vacía del servidor');
 
-    setLoading(true);
-    setShowResults(false);
-    setError(null);
+    let parsed: any = JSON.parse(text);
+    if (Array.isArray(parsed)) parsed = parsed[0];
+    if (parsed.output) parsed = parsed.output;
 
-    try {
-      console.log('Enviando datos al webhook:', data);
+    console.log('Datos parseados:', parsed);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+    setAnalysisResult(parsed);
+    setLoading(false);
+    setShowResults(true);
+    setShowForm(false);
 
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        signal: controller.signal
-      });
+  } catch (error: any) {
+    setLoading(false);
+    console.error('Error completo:', error);
 
-      clearTimeout(timeoutId);
-      console.log('Respuesta HTTP:', response.status);
+    let userMessage = '';
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}`);
-      }
-
-      const text = await response.text();
-      console.log('Respuesta del servidor:', text.substring(0, 200));
-
-      if (!text) throw new Error('Respuesta vacía del servidor');
-
-      let parsed: any = JSON.parse(text);
-      if (Array.isArray(parsed)) parsed = parsed[0];
-      if (parsed.output) parsed = parsed.output;
-
-      console.log('Datos parseados:', parsed);
-
-      // Registrar la consulta
-      if (user) {
-        await registerAuthenticatedQuery(user.id, { organizacion, tema, fecha });
-        // Actualizar límites para usuarios autenticados
-        const limits = await checkAuthenticatedQueryLimit(user.id, userPlan);
-        setRemainingQueries(limits.remainingQueries);
-      } else {
-        const success = await registerAnonymousQuery();
-        console.log('Consulta anónima registrada:', success);
-        if (success) {
-          // Verificar límites reales después de registrar
-          const limits = await checkAnonymousQueryLimit();
-          setRemainingQueries(limits.remainingQueries);
-          setShowBanner(true);
-          console.log('Estado actualizado: remainingQueries=' + limits.remainingQueries + ', showBanner=true');
-        }
-      }
-
-      setAnalysisResult(parsed);
-      setLoading(false);
-      setShowResults(true);
-      setShowForm(false);
-
-    } catch (error: any) {
-      setLoading(false);
-      console.error('Error completo:', error);
-
-      let userMessage = '';
-
-      if (error.name === 'AbortError') {
-        userMessage = 'El análisis está tardando más de lo habitual.\n\n' +
-          'Es posible que haya numerosas menciones que analizar.\n\n' +
-          'Por favor, vuelve a intentarlo en unos minutos.';
-      }
-      else if (error.message.includes('Failed to fetch')) {
-        userMessage = 'No hemos podido conectar con el servidor.\n\n' +
-          'Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
-      }
-      else if (error.message.includes('Error 5')) {
-        userMessage = 'El servidor está experimentando problemas temporales.\n\n' +
-          'Por favor, inténtalo de nuevo en unos minutos.';
-      }
-      else {
-        userMessage = 'Ha ocurrido un error inesperado.\n\n' +
-          'Por favor, inténtalo de nuevo.';
-      }
-
-      setError(userMessage);
+    if (error.name === 'AbortError') {
+      userMessage = 'El análisis está tardando más de lo habitual.\n\n' +
+                    'Es posible que haya numerosas menciones que analizar.\n\n' +
+                    'Por favor, vuelve a intentarlo en unos minutos.';
+    } 
+    else if (error.message.includes('Failed to fetch')) {
+      userMessage = 'No hemos podido conectar con el servidor.\n\n' +
+                    'Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
     }
-  };
-
-  const handleResetForm = async () => {
-    // Verificar límites antes de permitir otra consulta
-    if (user) {
-      const limits = await checkAuthenticatedQueryLimit(user.id, userPlan);
-      if (!limits.canQuery) {
-        setModalAuth(true);
-        return;
-      }
-    } else {
-      // Para usuarios anónimos, verificar límites en la base de datos
-      console.log('[handleResetForm] Verificando límites - remainingQueries:', remainingQueries);
-      const limits = await checkAnonymousQueryLimit();
-      console.log('[handleResetForm] Límites desde BD:', limits);
-      if (!limits.canQuery) {
-        console.log('[handleResetForm] No puede hacer consultas - mostrando modal de autenticación');
-        setModalAuth(true);
-        return;
-      }
+    else if (error.message.includes('Error 5')) {
+      userMessage = 'El servidor está experimentando problemas temporales.\n\n' +
+                    'Por favor, inténtalo de nuevo en unos minutos.';
+    }
+    else {
+      userMessage = 'Ha ocurrido un error inesperado.\n\n' +
+                    'Por favor, inténtalo de nuevo.';
     }
 
+    setError(userMessage);
+  }
+};
+
+  const handleResetForm = () => {
     setOrganizacion('');
     setTema('');
     setFecha('');
@@ -283,33 +175,21 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
 
   const isPositiveResult = (resultado: string) => {
     return resultado?.toLowerCase().includes('funcionó') &&
-      !resultado?.toLowerCase().startsWith('no');
+           !resultado?.toLowerCase().startsWith('no');
   };
 
   return (
     <div className="container">
       <h1>¿Funcionó mi nota de prensa?</h1>
 
-      {!supabaseConfigured && (
-        <div className="warning-banner">
-          <strong>⚠️ Modo de Desarrollo</strong>
-          <p>Supabase no está configurado. El sistema usa localStorage temporal.</p>
-          <details style={{ marginTop: '10px', fontSize: '0.85em' }}>
-            <summary style={{ cursor: 'pointer' }}>Ver instrucciones de configuración</summary>
-            <p style={{ marginTop: '10px' }}>1. Crea un archivo <code>.env</code> en la raíz del proyecto</p>
-            <p>2. Agrega tus credenciales de Supabase (ver <code>SETUP_AUTH.md</code>)</p>
-          </details>
-        </div>
-      )}
-
       {showForm && (
         <>
           <p className="subtitle">
             Analiza GRATIS el impacto de tu última nota de prensa en radio y televisión canaria.<br />
-
+            
           </p>
           <small className="freemium-note">
-            3 consultas gratuitas • Sin registro necesario
+            Primera consulta gratuita • Sin registro necesario
           </small>
 
           <form onSubmit={handleSubmit}>
@@ -363,34 +243,23 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         <div id="results">
           <h2>Resultados del análisis</h2>
 
-          {showBanner && !user && remainingQueries > 0 && (
-            <div className="query-limit-banner">
-              <h3>✨ Te quedan {remainingQueries} {remainingQueries === 1 ? 'consulta gratuita' : 'consultas gratuitas'} hoy</h3>
-              <p>Crea cuenta gratis para:</p>
-              <ul>
-                <li>10 análisis diarios (vs 3 sin cuenta)</li>
-                <li>Historial de análisis</li>
-                <li>Comparativas</li>
-              </ul>
-              <div className="banner-actions">
-                <button className="btn-banner-primary" onClick={() => setModalAuth(true)}>
-                  Crear cuenta - 30 segundos
-                </button>
-                <button className="btn-banner-secondary">
-                  Ver planes Pro
-                </button>
-              </div>
+          <div className="query-limit-banner">
+            <h3>Te quedan 0 consultas gratuitas hoy</h3>
+            <p>Crea tu cuenta gratis para:</p>
+            <ul>
+              <li>3 análisis diarios</li>
+              <li>Historial de análisis</li>
+              <li>Comparativas entre fechas</li>
+            </ul>
+            <div className="banner-actions">
+              <button className="btn-banner-primary" onClick={() => setModalAuth(true)}>
+                Crear cuenta - 30 segundos
+              </button>
+              <button className="btn-banner-primary">
+                Ver planes Pro
+              </button>
             </div>
-          )}
-
-          {user && remainingQueries >= 0 && remainingQueries < 10 && userPlan === 'free' && (
-            <div className="query-limit-banner">
-              <h3>Te quedan {remainingQueries} {remainingQueries === 1 ? 'consulta' : 'consultas'} hoy</h3>
-              {remainingQueries === 0 && (
-                <p>Vuelve mañana o actualiza a Pro para consultas ilimitadas</p>
-              )}
-            </div>
-          )}
+          </div>
 
           {analysisResult.ai_model === 'claude-3.5-sonnet' && analysisResult.ai_provider === 'anthropic' && (
             <div className="ai-badge">
@@ -479,21 +348,21 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
             </div>
 
             <div className="detail-item">
-              <h4>Cantidad de emisiones</h4>
-              <p><strong>Total:</strong> {analysisResult.cobertura_emisiones || 0}</p>
-              <p><strong>Descripción:</strong> Número de emisiones únicas en radio y televisión que difundieron la nota.</p>
+             <h4>Cantidad de emisiones</h4>
+             <p><strong>Total:</strong> {analysisResult.cobertura_emisiones || 0}</p>
+             <p><strong>Descripción:</strong> Número de emisiones únicas en radio y televisión que difundieron la nota.</p>
             </div>
 
             <div className="detail-item">
-              <h4>Alcance estimado</h4>
-              <p><strong>Personas impactadas:</strong> {analysisResult.alcance_estimado}</p>
-              <p><strong>Descripción:</strong> Estimación del número total de personas expuestas al mensaje.</p>
+             <h4>Alcance estimado</h4>
+             <p><strong>Personas impactadas:</strong> {analysisResult.alcance_estimado}</p>
+             <p><strong>Descripción:</strong> Estimación del número total de personas expuestas al mensaje.</p>
             </div>
 
             <div className="detail-item">
-              <h4>Duración en agenda mediática</h4>
-              <p><strong>Días activos:</strong> {analysisResult.duracion_dias || 0} días</p>
-              <p><strong>Descripción:</strong> Tiempo durante el cual la nota se mantuvo relevante en los medios.</p>
+             <h4>Duración en agenda mediática</h4>
+             <p><strong>Días activos:</strong> {analysisResult.duracion_dias || 0} días</p>
+             <p><strong>Descripción:</strong> Tiempo durante el cual la nota se mantuvo relevante en los medios.</p>
             </div>
 
 
@@ -513,7 +382,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         )}
       </Modal>
 
-      <Modal isOpen={modalComparar} onClose={() => setModalComparar(false)} title="Comparación de notas de prensa" className="modal-descarga-content">
+            <Modal isOpen={modalComparar} onClose={() => setModalComparar(false)} title="Comparación de notas de prensa" className="modal-descarga-content">
         <p className="descarga-message">
           La funcionalidad de comparación está disponible en la versión Pro.
         </p>
@@ -544,27 +413,27 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
       </Modal>
 
 
-      <Modal isOpen={modalDescarga} onClose={() => setModalDescarga(false)} title="Descarga del informe" className="modal-descarga-content">
-        <p className="descarga-message">
-          Se va a descargar el informe de la versión gratuita con datos básicos de impacto de su nota de prensa.
-        </p>
-        <p className="descarga-message">
-          Para un informe completo y funcionalidades Pro, contacte con ventas en:{' '}
-          <strong>contacto@icc-e.org</strong>
-        </p>
-        <div className="descarga-actions">
-          <button type="button" className="action-btn btn-primary" onClick={handleDescargarBasico}>
-            📄 Descargar informe básico
-          </button>
-          <button
-            type="button"
-            className="action-btn btn-success"
-            onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro', '_blank')}
-          >
-            ⭐ Ver versión Pro
-          </button>
-        </div>
-      </Modal>
+              <Modal isOpen={modalDescarga} onClose={() => setModalDescarga(false)} title="Descarga del informe" className="modal-descarga-content">
+          <p className="descarga-message">
+            Se va a descargar el informe de la versión gratuita con datos básicos de impacto de su nota de prensa.
+          </p>
+          <p className="descarga-message">
+            Para un informe completo y funcionalidades Pro, contacte con ventas en:{' '}
+            <strong>contacto@icc-e.org</strong>
+          </p>
+          <div className="descarga-actions">
+            <button type="button" className="action-btn btn-primary" onClick={handleDescargarBasico}>
+              📄 Descargar informe básico
+            </button>
+            <button
+              type="button"
+              className="action-btn btn-success"
+              onClick={() => window.open('mailto:contacto@icc-e.org?subject=Consulta sobre versión Pro', '_blank')}
+            >
+              ⭐ Ver versión Pro
+            </button>
+          </div>
+        </Modal>
 
       <Modal
         isOpen={error !== null}
@@ -572,7 +441,7 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
         title="Aviso de error"
       >
         <p className="whitespace-pre-line">{error}</p>
-        <button
+        <button 
           onClick={() => setError(null)}
           className="action-btn btn-primary"
         >
@@ -583,9 +452,8 @@ ${analysisResult.recomendaciones.map((rec, idx) => `${idx + 1}. ${rec}`).join('\
       <AuthModal
         isOpen={modalAuth}
         onClose={() => setModalAuth(false)}
-        onAuthSuccess={async (userId) => {
+        onAuthSuccess={(userId) => {
           console.log('Usuario autenticado:', userId);
-          await checkQueryLimits();
           setModalAuth(false);
         }}
       />

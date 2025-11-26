@@ -945,3 +945,369 @@ form button[type="submit"]:active {
     font-size: 1.2em;
   }
 }
+
+/* ===================================
+   ESTILOS DE AUTENTICACIÓN
+   =================================== */
+
+/* Modal de autenticación */
+.auth-modal-content {
+  max-width: 450px;
+  padding: 30px;
+}
+
+/* Mensaje de bienvenida */
+.auth-welcome-message {
+  text-align: center;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 12px;
+}
+
+.welcome-title {
+  font-size: 1.5em;
+  color: #2d3748;
+  margin-bottom: 10px;
+}
+
+.welcome-subtitle {
+  color: #4a5568;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.welcome-benefits {
+  list-style: none;
+  padding: 0;
+  text-align: left;
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.welcome-benefits li {
+  padding: 8px 0;
+  color: #2d3748;
+  font-size: 0.95em;
+}
+
+/* Tabs de autenticación */
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  background-color: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #718096;
+  transition: all 0.3s ease;
+}
+
+.auth-tab:hover {
+  background-color: #edf2f7;
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, #3d944c 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Formulario de autenticación */
+.auth-form {
+  width: 100%;
+}
+
+.auth-form h2 {
+  color: #2d3748;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+  text-align: center;
+}
+
+.auth-form .form-group {
+  margin-bottom: 15px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95em;
+  transition: all 0.3s ease;
+  background-color: #f7fafc;
+  color: #2d3748;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #667eea;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Botón de Google */
+.google-auth-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.google-auth-btn:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.google-auth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Divisor "o" */
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+.auth-divider span {
+  position: relative;
+  background-color: white;
+  padding: 0 15px;
+  color: #718096;
+  font-size: 0.9em;
+}
+
+/* Botón de envío */
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #3d944c 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mensaje de error */
+.auth-error {
+  background-color: #fed7d7;
+  color: #c53030;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* Switch entre login/registro */
+.auth-switch {
+  text-align: center;
+  margin-top: 20px;
+  color: #718096;
+  font-size: 0.9em;
+}
+
+.auth-link {
+  color: #667eea;
+  cursor: pointer;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.auth-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+/* Nota al pie del modal */
+.auth-footer-note {
+  text-align: center;
+  color: #718096;
+  font-size: 0.85em;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Banner de límite de consultas */
+.query-limit-banner {
+  background: linear-gradient(135deg, #f6e05e15 0%, #f6ad5515 100%);
+  border: 2px solid #f6e05e;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.query-limit-banner h3 {
+  color: #2d3748;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.query-limit-banner p {
+  color: #4a5568;
+  margin-bottom: 10px;
+}
+
+.query-limit-banner ul {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0;
+}
+
+.query-limit-banner ul li {
+  color: #2d3748;
+  padding: 5px 0;
+  font-size: 0.95em;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.btn-banner-primary {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3d944c 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+}
+
+.btn-banner-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-banner-secondary {
+  padding: 10px 20px;
+  background-color: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+}
+
+.btn-banner-secondary:hover {
+  background-color: #f7fafc;
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .auth-modal-content {
+    padding: 20px;
+  }
+
+  .welcome-benefits {
+    font-size: 0.9em;
+  }
+
+  .banner-actions {
+    flex-direction: column;
+  }
+
+  .btn-banner-primary,
+  .btn-banner-secondary {
+    width: 100%;
+  }
+}
+
+/* Banner de advertencia para desarrollo */
+.warning-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.warning-banner strong {
+  color: #92400e;
+  font-size: 1em;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.warning-banner p {
+  color: #78350f;
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+.warning-banner code {
+  background-color: rgba(0,0,0,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.warning-banner details {
+  color: #78350f;
+}
+
+.warning-banner summary:hover {
+  color: #92400e;
+}
