@@ -1,9 +1,9 @@
 export interface Mencion {
+  medio: string;
   tipo: string;
+  fecha: string;
   extracto?: string;
   texto?: string;
-  fecha?: string;
-  medio?: string;
 }
 
 export interface AnalysisDetail {
@@ -15,6 +15,9 @@ export interface AnalysisResult {
   mensaje?: string;
   resultado_global: string;
   resumen_ejecutivo?: string;
+  impacto?: string;
+  nombre_publicacion?: string;
+  id?: string;
   ai_model?: string;
   ai_provider?: string;
   error?: string;
@@ -25,8 +28,13 @@ export interface AnalysisResult {
   duracion_dias: number;
   alcance_estimado: string | number;
   rango_fechas?: string;
-  analisis: Record<string, AnalysisDetail>;
+  analisis: {
+    cobertura?: AnalysisDetail;
+    emisiones?: AnalysisDetail;
+    duracion?: AnalysisDetail;
+  };
   menciones?: {
+    total?: number;
     detalle: Mencion[];
   };
   recomendaciones?: string[];

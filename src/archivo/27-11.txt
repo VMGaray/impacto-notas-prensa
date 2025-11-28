@@ -1,0 +1,102 @@
+Especificaciones de contenido e interfaz
+¿Funcionó mi nota de prensa?
+Documento para implementación · Victoria · 26 noviembre 2025
+
+1. Página "Quiénes somos"
+Esta sección debe aparecer accesible desde el menú principal o el pie de página. El objetivo es transmitir credibilidad institucional sin parecer un folleto comercial.
+Contenido propuesto
+Título de la página
+Sobre MMI Analytics
+Texto principal
+MMI Analytics es la división de análisis de datos de MMI, empresa canaria especializada en monitorización de medios desde 2003. Procesamos información de radio, televisión y medios digitales para organizaciones que necesitan datos fiables sobre su presencia mediática.
+"¿Funcionó mi nota de prensa?" es nuestra primera herramienta de acceso público. Permite a gabinetes de comunicación, administraciones y organizaciones evaluar de forma inmediata y objetiva el impacto de sus comunicaciones en radio y televisión de Canarias.
+Datos clave (mostrar como lista o iconos)
+•	Más de 20 años monitorizando medios en Canarias
+•	Datos reales de radio y televisión regional
+•	Análisis automático mediante inteligencia artificial
+•	Criterios de evaluación homogéneos y transparentes
+Pie de sección (opcional)
+¿Necesitas más información? Escríbenos a administracion@mmi-e.com
+2. Propuesta de valor visible
+Estos textos deben aparecer en la página principal, antes del formulario de consulta. El objetivo es que el visitante entienda qué hace la herramienta en menos de diez segundos.
+Textos para la página principal
+Título principal
+¿Funcionó mi nota de prensa?
+Subtítulo
+Descubre en segundos si tu comunicación llegó a radio y televisión de Canarias
+Descripción breve (bajo el subtítulo)
+Introduce los datos de tu nota de prensa y obtén un análisis objetivo: número de menciones, alcance estimado, duración de la cobertura y un veredicto claro sobre su repercusión real.
+Puntos diferenciadores (mostrar como tres columnas o tarjetas)
+Datos reales
+Información de emisiones reales de radio y televisión canaria	Análisis instantáneo
+Resultados en segundos mediante inteligencia artificial	Criterios objetivos
+Veredicto basado en métricas homogéneas y transparentes
+
+3. Página de precios
+Accesible desde el menú principal. El objetivo es mostrar con claridad qué incluye cada modalidad y facilitar el contacto para la versión de pago.
+Estructura de planes
+Gratuito	Profesional
+0 €
+Sin compromiso	Contactar
+Precio según necesidades
+3 consultas sin registro
+10 consultas con cuenta gratuita
+Datos de los últimos 3 días
+Radio y televisión de Canarias
+Veredicto y métricas básicas
+Informe descargable en texto	Consultas ilimitadas
+Períodos de análisis ampliados
+Historial completo de consultas
+Detalle de programas específicos
+Comparativas históricas
+Informes avanzados personalizados
+Empezar gratis	Solicitar información
+
+Nota bajo la tabla
+La versión profesional se adapta a las necesidades de cada organización. Escríbenos a administracion@mmi-e.com para recibir una propuesta personalizada.
+4. Flujo de conversión de visitantes
+Esta sección describe los momentos clave donde la aplicación debe mostrar mensajes que guíen al usuario hacia el registro o el contacto comercial.
+Mensajes según estado del usuario
+Momento	Mensaje	Acción
+Primera visita	"Primera consulta gratuita · Sin registro necesario"	Mostrar bajo el formulario
+Tras 3 consultas sin registro	"Has agotado tus consultas gratuitas. Regístrate para continuar con 10 análisis adicionales."	Modal bloqueante con formulario de registro
+Usuario registrado con consultas	"Te quedan X consultas hoy"	Banner informativo en cabecera o junto al formulario
+Usuario registrado sin consultas	"Has alcanzado el límite de tu cuenta gratuita. Vuelve mañana o contacta con nosotros para acceder a la versión profesional."	Modal con enlace a formulario de contacto
+Descarga de informe	"Se va a descargar el informe de la versión gratuita. Para informes completos, contacta con ventas."	Modal previo a descarga con botón de contacto
+
+Formulario de contacto comercial
+Cuando el usuario agote sus consultas registradas o solicite información sobre la versión profesional, debe ver un formulario sencillo que envíe los datos a:
+•	administracion@mmi-e.com
+•	nfernandez@mmi-e.com
+Campos del formulario
+1.	Nombre y apellidos (obligatorio)
+2.	Organización (obligatorio)
+3.	Correo electrónico (obligatorio)
+4.	Teléfono (opcional)
+5.	Mensaje (opcional, con texto predeterminado: "Quiero información sobre la versión profesional")
+5. Estructura de navegación
+La aplicación necesita un menú sencillo que permita acceder a la información institucional sin interferir con la funcionalidad principal.
+Menú principal (cabecera)
+•	Inicio → página principal con el formulario de consulta
+•	Precios → página de planes
+•	Quiénes somos → página institucional
+Pie de página
+•	© 2025 MMI Analytics
+•	Enlace a política de privacidad (cuando esté disponible)
+•	Contacto: administracion@mmi-e.com
+•	Enlace a MMI (mmi-e.com)
+6. Resumen de tareas
+Páginas nuevas a crear
+1.	Página "Quiénes somos" con el contenido de la sección 1
+2.	Página "Precios" con la tabla de planes de la sección 3
+Elementos a añadir en página principal
+•	Subtítulo y descripción breve según sección 2
+•	Tres tarjetas con puntos diferenciadores
+•	Menú de navegación en cabecera
+Funcionalidad de conversión
+•	Mensajes contextuales según estado del usuario (sección 4)
+•	Formulario de contacto comercial conectado a los correos indicados
+•	Modal previo a descarga de informe
+Pie de página
+Añadir pie de página con información de contacto y enlaces según sección 5
+Nota: Todos los textos deben mantener el tono institucional y profesional definido en la base de conocimiento del producto. Evitar lenguaje comercial agresivo, anglicismos y mayúsculas innecesarias.

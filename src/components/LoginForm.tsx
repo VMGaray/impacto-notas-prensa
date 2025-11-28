@@ -60,14 +60,18 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
   const isDisabled = loading || disabled;
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form">
-      <h2>Iniciar sesión</h2>
+    <form onSubmit={handleSubmit} className="w-full animate-fadeIn">
+      <h2 className="text-[#2d3748] mb-6 text-[1.3em] text-center">Iniciar sesión</h2>
 
-      {error && <div className="auth-error">{error}</div>}
+      {error && (
+        <div className="bg-red-100 text-red-700 px-3 py-3 rounded-lg mb-5 border-l-4 border-red-400 text-sm animate-slideIn">
+          {error}
+        </div>
+      )}
 
       <button
         type="button"
-        className="google-auth-btn"
+        className="w-full py-3 px-3 bg-white border-2 border-gray-200 rounded-lg text-sm font-semibold text-[#2d3748] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2.5 mb-5 hover:bg-[#f7fafc] hover:border-[#cbd5e0] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         onClick={handleGoogleLogin}
         disabled={isDisabled}
       >
@@ -80,12 +84,14 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
         Continuar con Google
       </button>
 
-      <div className="auth-divider">
-        <span>o</span>
+      <div className="relative text-center my-5 before:content-[''] before:absolute before:top-1/2 before:left-0 before:right-0 before:h-px before:bg-gray-200">
+        <span className="relative bg-white px-[15px] text-[#718096] text-sm">o</span>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="login-email">Email</label>
+      <div className="mb-[18px]">
+        <label htmlFor="login-email" className="block mb-1.5 text-[#4a5568] font-semibold text-sm">
+          Email
+        </label>
         <input
           type="email"
           id="login-email"
@@ -94,11 +100,14 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
           placeholder="tu@email.com"
           required
           disabled={isDisabled}
+          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] transition-all duration-300 box-border focus:outline-none focus:border-[#9A0483] focus:bg-white focus:shadow-[0_0_0_3px_rgba(61,148,76,0.15)] placeholder:text-[#a0aec0]"
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="login-password">Contraseña</label>
+      <div className="mb-[18px]">
+        <label htmlFor="login-password" className="block mb-1.5 text-[#4a5568] font-semibold text-sm">
+          Contraseña
+        </label>
         <input
           type="password"
           id="login-password"
@@ -107,16 +116,24 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
           placeholder="••••••••"
           required
           disabled={isDisabled}
+          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] transition-all duration-300 box-border focus:outline-none focus:border-[#9A0483] focus:bg-white focus:shadow-[0_0_0_3px_rgba(61,148,76,0.15)] placeholder:text-[#a0aec0]"
         />
       </div>
 
-      <button type="submit" className="auth-submit-btn" disabled={isDisabled}>
+      <button
+        type="submit"
+        className="w-full py-3.5 px-3 bg-gradient-to-br from-[#7B3294] to-[#9A0483] text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 mt-2.5 shadow-[0_4px_15px_rgba(61,148,76,0.4)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(61,148,76,0.6)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+        disabled={isDisabled}
+      >
         {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
       </button>
 
-      <p className="auth-switch">
+      <p className="text-center mt-5 text-[#718096] text-sm">
         ¿No tienes cuenta?{' '}
-        <span onClick={onSwitchToRegister} className="auth-link">
+        <span
+          onClick={onSwitchToRegister}
+          className="text-[#9A0483] cursor-pointer font-semibold underline transition-colors duration-200 hover:text-[#764ba2]"
+        >
           Regístrate aquí
         </span>
       </p>
