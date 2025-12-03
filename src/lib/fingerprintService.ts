@@ -81,12 +81,12 @@ export const checkAnonymousQueryLimit = async (): Promise<{
       .select('*')
       .eq('fingerprint', fingerprint)
       .gte('expires_at', new Date().toISOString())
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 es "no rows returned", lo cual está bien
-      console.error('Error al verificar límite:', error);
-      throw error;
+    // Si hay error de permisos (406, 401, 403), usar localStorage
+    if (error && !['PGRST116', 'PGRST301'].includes(error.code)) {
+      console.warn('⚠️ Error de Supabase, usando localStorage:', error.message);
+      throw new Error('Fallback to localStorage');
     }
 
     if (!data) {
@@ -103,13 +103,21 @@ export const checkAnonymousQueryLimit = async (): Promise<{
       remainingQueries: Math.max(0, remaining)
     };
   } catch (error) {
-    console.error('Error en checkAnonymousQueryLimit:', error);
+    console.warn('⚠️ Usando localStorage como fallback para límites anónimos');
     // En caso de error, usar localStorage como fallback
     const stored = localStorage.getItem('anonymous_query_data');
     if (!stored) {
       return { canQuery: true, remainingQueries: MAX_ANONYMOUS_QUERIES };
     }
     const data = JSON.parse(stored);
+    const now = new Date().getTime();
+
+    // Verificar si expiró
+    if (now > data.expiresAt) {
+      localStorage.removeItem('anonymous_query_data');
+      return { canQuery: true, remainingQueries: MAX_ANONYMOUS_QUERIES };
+    }
+
     const remaining = MAX_ANONYMOUS_QUERIES - (data.queryCount || 0);
     return {
       canQuery: remaining > 0,
@@ -161,11 +169,12 @@ export const registerAnonymousQuery = async (): Promise<boolean> => {
       .select('*')
       .eq('fingerprint', fingerprint)
       .gte('expires_at', new Date().toISOString())
-      .single();
+      .maybeSingle();
 
-    if (selectError && selectError.code !== 'PGRST116') {
-      console.error('Error al verificar registro:', selectError);
-      throw selectError;
+    // Si hay error de permisos, usar localStorage
+    if (selectError && !['PGRST116', 'PGRST301'].includes(selectError.code)) {
+      console.warn('⚠️ Error de Supabase al verificar registro, usando localStorage');
+      throw new Error('Fallback to localStorage');
     }
 
     const expiresAt = new Date();
@@ -183,7 +192,10 @@ export const registerAnonymousQuery = async (): Promise<boolean> => {
           expires_at: expiresAt.toISOString()
         });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('⚠️ Error al insertar en Supabase, usando localStorage');
+        throw error;
+      }
       console.log('✅ Consulta anónima registrada en Supabase (1/3)');
     } else {
       // Actualizar contador
@@ -196,31 +208,38 @@ export const registerAnonymousQuery = async (): Promise<boolean> => {
         })
         .eq('id', existing.id);
 
-      if (error) throw error;
+      if (error) {
+        console.warn('⚠️ Error al actualizar en Supabase, usando localStorage');
+        throw error;
+      }
       console.log(`✅ Consulta anónima registrada en Supabase (${newCount}/3)`);
     }
 
     return true;
   } catch (error) {
-    console.error('Error en registerAnonymousQuery:', error);
+    console.warn('⚠️ Usando localStorage como fallback para registro');
     // Fallback a localStorage
     const now = new Date().getTime();
     const stored = localStorage.getItem('anonymous_query_data');
     let queryCount = 1;
+    let expiresAt = now + (24 * 60 * 60 * 1000);
 
     if (stored) {
       const data = JSON.parse(stored);
+      // Si no expiró, incrementar contador y mantener expiración
       if (now < data.expiresAt) {
         queryCount = (data.queryCount || 0) + 1;
+        expiresAt = data.expiresAt;
       }
     }
 
     const data = {
       queryCount,
       lastQueryAt: now,
-      expiresAt: now + (24 * 60 * 60 * 1000)
+      expiresAt
     };
     localStorage.setItem('anonymous_query_data', JSON.stringify(data));
+    console.log(`✅ Consulta anónima registrada en localStorage (${queryCount}/3)`);
     return true;
   }
 };
@@ -285,7 +304,8 @@ export const registerAuthenticatedQuery = async (
   }
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log('🔁 registerAuthenticatedQuery: registrando consulta para', userId, queryData);
+    const { data, error } = await supabase
       .from('user_queries')
       .insert({
         user_id: userId,
@@ -293,13 +313,15 @@ export const registerAuthenticatedQuery = async (
         tema: queryData.tema,
         fecha: queryData.fecha,
         created_at: new Date().toISOString()
-      });
+      })
+      .select();
 
     if (error) {
-      console.error('Error al registrar consulta de usuario:', error);
+      console.error('❌ Error al registrar consulta de usuario:', error);
       return false;
     }
 
+    console.log('✅ Consulta de usuario registrada en user_queries:', data);
     return true;
   } catch (error) {
     console.error('Error en registerAuthenticatedQuery:', error);

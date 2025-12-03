@@ -14,7 +14,7 @@ export const MetricsDisplay = ({ analysisResult, ensureNumber }: MetricsDisplayP
     return tipo === 'tv' || tipo === 'radio' || tipo === 'televisión' || tipo === 'television';
   });
 
-  const metricBoxClass = "my-3 px-5 py-[18px] rounded-xl text-white text-[1.05em] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-transform duration-200 animate-slideIn hover:translate-x-1.5 bg-gradient-to-br from-green-500 to-green-600";
+  const metricBoxClass = "my-3 px-3 sm:px-5 py-3 sm:py-[18px] rounded-xl text-white text-base sm:text-[1.05em] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-transform duration-200 animate-slideIn hover:translate-x-1.5 bg-gradient-to-br from-[#40ABA5] to-[#40ABA5]";
 
   return (
     <>

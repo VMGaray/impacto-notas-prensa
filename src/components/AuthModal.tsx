@@ -19,7 +19,9 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, showWelcomeMessage =
   };
 
   const handleRegisterSuccess = () => {
-    setIsLogin(true);
+    // Cerrar el modal después del registro exitoso
+    // El AuthContext detectará automáticamente al usuario si está autenticado
+    onClose();
   };
 
   const handleCreateAccount = () => {
@@ -47,11 +49,11 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, showWelcomeMessage =
       onClick={handleClose}
     >
       <div
-        className="bg-white my-[5%] mx-auto p-8 rounded-[20px] w-[90%] max-w-[450px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] animate-slideDown"
+        className="bg-white my-[5%] mx-auto p-4 sm:p-8 rounded-[20px] w-[95%] sm:w-[90%] max-w-[450px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] animate-slideDown max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <span
-          className="text-[#aaa] float-right text-[32px] font-bold leading-5 cursor-pointer transition-colors duration-300 hover:text-black"
+          className="text-[#aaa] float-right text-[28px] sm:text-[32px] font-bold leading-5 cursor-pointer transition-colors duration-300 hover:text-black"
           onClick={handleClose}
         >
           &times;
@@ -59,30 +61,36 @@ export const AuthModal = ({ isOpen, onClose, onAuthSuccess, showWelcomeMessage =
 
         {/* Banner de bienvenida */}
         {showWelcomeMessage && !showForm && (
-          <div className="text-center mb-6 p-5 bg-gradient-to-br from-[#667eea]/[0.08] to-[#764ba2]/[0.08] rounded-xl">
-            <h2 className="text-2xl text-[#2d3748] mb-2.5">¡Vemos que te gusta! 🎉</h2>
-            <p className="text-[#4a5568] mb-4 font-semibold">Crea tu cuenta gratuita para:</p>
+          <div className="text-center mb-4 sm:mb-6 p-4 sm:p-5 bg-gradient-to-br from-[#667eea]/[0.08] to-[#764ba2]/[0.08] rounded-xl">
+            <h2 className="text-xl sm:text-2xl text-[#2d3748] mb-2 sm:mb-2.5">¡Vemos que te gusta! 🎉</h2>
+            <p className="text-[#4a5568] mb-3 sm:mb-4 font-semibold text-sm sm:text-base">Crea tu cuenta gratuita para:</p>
             <ul className="list-none p-0 text-left max-w-[350px] my-0 mx-auto">
-              <li className="py-2 text-[#2d3748] text-sm">✅ 10 análisis diarios (vs 3 sin cuenta)</li>
-              <li className="py-2 text-[#2d3748] text-sm">✅ Historial de todas tus consultas</li>
-              <li className="py-2 text-[#2d3748] text-sm">✅ Comparar resultados entre fechas</li>
+              <li className="py-1.5 sm:py-2 text-[#2d3748] text-xs sm:text-sm">✅ 10 análisis diarios (vs 3 sin cuenta)</li>
+              <li className="py-1.5 sm:py-2 text-[#2d3748] text-xs sm:text-sm">✅ Historial de todas tus consultas</li>
+              <li className="py-1.5 sm:py-2 text-[#2d3748] text-xs sm:text-sm">✅ Comparar resultados entre fechas</li>
             </ul>
           </div>
         )}
 
         {/* Botones de acción */}
         {!showForm && (
-          <div className="flex gap-2.5 mb-6">
+          <div className="flex gap-2 sm:gap-2.5 mb-4 sm:mb-6">
             <button
-              className="flex-1 py-3 px-3 rounded-lg cursor-pointer font-semibold transition-all duration-300 border-none bg-gradient-to-br from-[#7B3294] to-[#9A0483] text-white hover:shadow-lg"
-              onClick={handleCreateAccount}
+              className="flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-lg cursor-pointer font-semibold transition-all duration-300 border-none bg-gradient-to-br from-[#7B3294] to-[#9A0483] text-white hover:shadow-lg text-sm sm:text-base"
+              onClick={() => {
+                console.log('🎯 Click en Crear cuenta');
+                handleCreateAccount();
+              }}
               type="button"
             >
               Crear cuenta
             </button>
             <button
-              className="flex-1 py-3 px-3 rounded-lg cursor-pointer font-semibold transition-all duration-300 border-none bg-[#f7fafc] border-2 border-gray-200 text-[#718096] hover:bg-[#edf2f7]"
-              onClick={handleLogin}
+              className="flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-lg cursor-pointer font-semibold transition-all duration-300 border-none bg-[#f7fafc] border-2 border-gray-200 text-[#718096] hover:bg-[#edf2f7] text-sm sm:text-base"
+              onClick={() => {
+                console.log('🎯 Click en Iniciar sesión');
+                handleLogin();
+              }}
               type="button"
             >
               Iniciar sesión

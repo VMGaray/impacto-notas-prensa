@@ -12,21 +12,19 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
   });
 
   if (mencionesValidas.length === 0) {
-    return (
-      <div className="bg-[#f7fafc] text-[#2d3748] p-[15px] my-3 rounded-[10px] border-l-4 border-[#3d944c]">
-        <h4 className="text-[#4a5568] mb-2">Menciones encontradas</h4>
-        <p className="text-[#2d3748] leading-6"><strong>Cantidad:</strong> 0 menciones</p>
-        <p className="text-[#2d3748] leading-6"><strong>Descripción:</strong> No se encontraron menciones en los medios consultados.</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="bg-[#f7fafc] text-[#2d3748] p-[15px] my-3 rounded-[10px] border-l-4 border-[#3d944c]">
-      <h4 className="text-[#4a5568] mb-2">Menciones encontradas</h4>
-      <p className="text-[#2d3748] leading-6"><strong>Cantidad:</strong> {mencionesValidas.length} menciones</p>
-      <p className="text-[#2d3748] leading-6"><strong>Descripción:</strong> Fragmentos de las noticias donde se menciona la organización o el tema analizado.</p>
-      <div className="mt-[15px]">
+    <div className="bg-[#F9F9F9] text-[#2d3748] p-3 sm:p-[15px] my-3 rounded-[10px] border-l-4 border-[#A6089B]">
+      <h4 className="text-[#931583] mb-2">Menciones encontradas</h4>
+      <p className="text-[#2d3748] leading-6">
+        <strong>Cantidad:</strong> {mencionesValidas.length} menciones
+      </p>
+      <p className="text-[#2d3748] leading-6">
+        <strong>Descripción:</strong> Fragmentos de las noticias donde se menciona la organización o el tema analizado.
+      </p>
+      <div className="mt-3 sm:mt-[15px]">
         {mencionesValidas.map((m, index) => {
           const extracto = m.extracto || m.texto || "";
           const tipo = (m.tipo || '').toLowerCase();
@@ -35,15 +33,17 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
           return (
             <div
               key={index}
-              className={`mb-5 p-[15px] bg-[#f7fafc] rounded-md shadow-sm ${
-                isTv ? 'border-l-4 border-[#48bb78]' : 'border-l-4 border-[#4299e1]'
+              className={`mb-5 p-3 sm:p-[15px] bg-[#F9F9F9] rounded-md shadow-sm ${
+                isTv ? 'border-l-4 border-[#40ABA5]' : 'border-l-4 border-[#A6089B]'
               }`}
             >
               <div className="flex justify-between items-center mb-2.5">
-                <strong className="text-[#2b6cb0] text-[1.05em]">Mención {index + 1}</strong>
+                <strong className="text-[#931583] text-base sm:text-[1.05em]">Mención {index + 1}</strong>
                 <span
-                  className={`text-white py-1 px-2.5 rounded-xl text-[0.85em] font-semibold uppercase ${
-                    isTv ? 'bg-[#48bb78]' : 'bg-[#4299e1]'
+                  className={`text-white py-1 px-2.5 rounded-xl text-xs sm:text-[0.85em] font-semibold uppercase ${
+                    isTv
+                      ? 'bg-[#40ABA5]'
+                      : 'bg-gradient-to-br from-[#A6089B] to-[#931583]'
                   }`}
                 >
                   {m.tipo}
@@ -58,16 +58,16 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
                 </div>
               )}
 
-              <div className="flex gap-5 flex-wrap mt-2.5 text-[0.9em]">
+              <div className="flex gap-3 sm:gap-5 flex-wrap mt-2.5 text-sm sm:text-[0.9em]">
                 {m.medio && (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[#718096]"><strong>Medio:</strong></span>
+                    <span className="text-[#8878A9]"><strong>Medio:</strong></span>
                     <span className="text-[#2d3748]">{m.medio}</span>
                   </div>
                 )}
                 {m.fecha && (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[#718096]"><strong>Fecha:</strong></span>
+                    <span className="text-[#8878A9]"><strong>Fecha:</strong></span>
                     <span className="text-[#2d3748]">{m.fecha}</span>
                   </div>
                 )}

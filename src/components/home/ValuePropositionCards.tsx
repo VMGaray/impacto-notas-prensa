@@ -23,17 +23,17 @@ export const ValuePropositionCards: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1100px] mx-auto px-6 mb-20">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-[1100px] mx-auto px-4 sm:px-6 mb-12 sm:mb-20">
       {cards.map((card, index) => (
         <div
           key={index}
-          className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-8 border border-[#f3f4f6] text-center"
+          className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-6 sm:p-8 border border-[#f3f4f6] text-center"
         >
-          <div className={`w-14 h-14 mx-auto mb-5 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center`}>
-            <span className="text-3xl">{card.icon}</span>
+          <div className={`w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-4 sm:mb-5 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center`}>
+            <span className="text-2xl sm:text-3xl">{card.icon}</span>
           </div>
-          <h3 className="text-[#111827] font-bold text-lg mb-3">{card.title}</h3>
-          <p className="text-[#6b7280] text-sm leading-relaxed">
+          <h3 className="text-[#111827] font-bold text-base sm:text-lg mb-2 sm:mb-3">{card.title}</h3>
+          <p className="text-[#6b7280] text-xs sm:text-sm leading-relaxed">
             {card.description}
           </p>
         </div>

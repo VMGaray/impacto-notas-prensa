@@ -17,18 +17,21 @@ export const Modal = ({ isOpen, onClose, title, children, className = '' }: Moda
       onClick={onClose}
     >
       <div
-        className={`bg-white my-[5%] mx-auto p-8 rounded-[20px] w-[90%] max-w-[800px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] animate-slideDown ${className}`}
+        className={`bg-[#F9F9F9] my-[5%] mx-auto p-4 sm:p-8 rounded-[20px] w-[95%] sm:w-[90%] max-w-[800px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] animate-slideDown max-h-[90vh] overflow-y-auto ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         <span
-          className="text-[#aaa] float-right text-[32px] font-bold leading-5 cursor-pointer transition-colors duration-300 hover:text-black"
+          className="text-[#8878A9] float-right text-[28px] sm:text-[32px] font-bold leading-5 cursor-pointer transition-colors duration-300 hover:text-[#A6089B]"
           onClick={onClose}
         >
           &times;
         </span>
-        <h2 className="text-[#2d3748] mb-5 border-b-[3px] border-[#3d944c] pb-2.5">{title}</h2>
+        <h2 className="text-[#931583] mb-4 sm:mb-5 border-b-[3px] border-[#40ABA5] pb-2.5 text-lg sm:text-2xl">
+          {title}
+        </h2>
         {children}
       </div>
     </div>
   );
 };
+

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LoginFormProps {
   onSuccess: (userId: string) => void;
@@ -8,25 +8,23 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: LoginFormProps) => {
+  const { signInWithEmail, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = async () => {
+    console.log('🔐 handleGoogleLogin: Iniciando...');
     setLoading(true);
     setError('');
-
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-
-      if (error) throw error;
+      console.log('🔐 handleGoogleLogin: Llamando a signInWithGoogle()...');
+      await signInWithGoogle();
+      console.log('🔐 handleGoogleLogin: signInWithGoogle() completado');
+      // El AuthContext se encargará de traer el perfil automáticamente
     } catch (err: any) {
+      console.error('❌ Error al iniciar sesión con Google:', err);
       setError(err.message || 'Error al iniciar sesión con Google');
       setLoading(false);
     }
@@ -38,17 +36,15 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const userId = await signInWithEmail(email, password);
+      setEmail('');
+      setPassword('');
 
-      if (error) throw error;
-
-      if (data.user) {
-        onSuccess(data.user.id);
-        setEmail('');
-        setPassword('');
+      if (userId) {
+        onSuccess(userId);
+      } else {
+        // Si no hay userId es probable que el registro requiera confirmación por email
+        setError('Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.');
       }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
@@ -64,23 +60,22 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
       <h2 className="text-[#2d3748] mb-6 text-[1.3em] text-center">Iniciar sesión</h2>
 
       {error && (
-        <div className="bg-red-100 text-red-700 px-3 py-3 rounded-lg mb-5 border-l-4 border-red-400 text-sm animate-slideIn">
+        <div className="px-3 py-3 mb-5 text-sm text-[#A6089B] bg-[#A6089B]/10 border-l-4 border-[#A6089B] rounded-lg animate-slideIn">
           {error}
         </div>
       )}
 
       <button
         type="button"
-        className="w-full py-3 px-3 bg-white border-2 border-gray-200 rounded-lg text-sm font-semibold text-[#2d3748] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2.5 mb-5 hover:bg-[#f7fafc] hover:border-[#cbd5e0] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        onClick={handleGoogleLogin}
+        className="w-full py-3 px-3 bg-white border-2 border-gray-200 rounded-lg text-sm font-semibold text-[#2d3748] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2.5 mb-5 hover:bg-[#f7fafc] hover:border-[#cbd5e0] disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={(e) => {
+          console.log('🖱️ CLICK EN BOTÓN GOOGLE - LoginForm');
+          e.preventDefault();
+          e.stopPropagation();
+          handleGoogleLogin();
+        }}
         disabled={isDisabled}
       >
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-          <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
-          <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-          <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.002 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
-        </svg>
         Continuar con Google
       </button>
 
@@ -100,7 +95,7 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
           placeholder="tu@email.com"
           required
           disabled={isDisabled}
-          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] transition-all duration-300 box-border focus:outline-none focus:border-[#9A0483] focus:bg-white focus:shadow-[0_0_0_3px_rgba(61,148,76,0.15)] placeholder:text-[#a0aec0]"
+          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] focus:outline-none focus:border-[#9A0483]"
         />
       </div>
 
@@ -116,13 +111,13 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
           placeholder="••••••••"
           required
           disabled={isDisabled}
-          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] transition-all duration-300 box-border focus:outline-none focus:border-[#9A0483] focus:bg-white focus:shadow-[0_0_0_3px_rgba(61,148,76,0.15)] placeholder:text-[#a0aec0]"
+          className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base bg-[#f7fafc] text-[#2d3748] focus:outline-none focus:border-[#9A0483]"
         />
       </div>
 
       <button
         type="submit"
-        className="w-full py-3.5 px-3 bg-gradient-to-br from-[#7B3294] to-[#9A0483] text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 mt-2.5 shadow-[0_4px_15px_rgba(61,148,76,0.4)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(61,148,76,0.6)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+        className="w-full py-3.5 px-3 bg-gradient-to-br from-[#7B3294] to-[#9A0483] text-white rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 mt-2.5 disabled:opacity-60"
         disabled={isDisabled}
       >
         {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
@@ -132,7 +127,7 @@ export const LoginForm = ({ onSuccess, onSwitchToRegister, disabled = false }: L
         ¿No tienes cuenta?{' '}
         <span
           onClick={onSwitchToRegister}
-          className="text-[#9A0483] cursor-pointer font-semibold underline transition-colors duration-200 hover:text-[#764ba2]"
+          className="text-[#9A0483] cursor-pointer font-semibold underline hover:text-[#764ba2]"
         >
           Regístrate aquí
         </span>

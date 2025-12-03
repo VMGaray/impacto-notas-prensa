@@ -64,7 +64,7 @@ Fecha: ${new Date().toLocaleString('es-ES')}
   if (exito) {
     return (
       <div className="text-center py-8">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#40ABA5]/20 flex items-center justify-center">
           <span className="text-3xl">✓</span>
         </div>
         <h3 className="text-xl font-bold text-[#111827] mb-2">¡Solicitud enviada!</h3>
@@ -80,15 +80,15 @@ Fecha: ${new Date().toLocaleString('es-ES')}
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-          <p className="text-red-700 text-sm">{error}</p>
+        <div className="bg-[#A6089B]/5 border-l-4 border-[#A6089B] p-4 rounded-lg">
+          <p className="text-[#A6089B] text-sm">{error}</p>
         </div>
       )}
 
       {/* Nombre y apellidos */}
       <div>
         <label htmlFor="nombre" className="block text-[#374151] font-semibold text-sm mb-2">
-          Nombre y apellidos <span className="text-red-500">*</span>
+          Nombre y apellidos <span className="text-[#A6089B]">*</span>
         </label>
         <input
           type="text"
@@ -104,7 +104,7 @@ Fecha: ${new Date().toLocaleString('es-ES')}
       {/* Organización */}
       <div>
         <label htmlFor="organizacion" className="block text-[#374151] font-semibold text-sm mb-2">
-          Organización <span className="text-red-500">*</span>
+          Organización <span className="text-[#A6089B]">*</span>
         </label>
         <input
           type="text"
@@ -120,7 +120,7 @@ Fecha: ${new Date().toLocaleString('es-ES')}
       {/* Correo electrónico */}
       <div>
         <label htmlFor="email" className="block text-[#374151] font-semibold text-sm mb-2">
-          Correo electrónico <span className="text-red-500">*</span>
+          Correo electrónico <span className="text-[#A6089B]">*</span>
         </label>
         <input
           type="email"
