@@ -30,7 +30,7 @@ export const HeroSection: React.FC = () => {
         <svg width="14" height="14" className="sm:w-4 sm:h-4" fill="#40ABA5" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
-        <span>Primera consulta gratuita · Sin registro</span>
+        <span>Tres consultas gratuitas · Sin registro</span>
       </div>
     </div>
   );
