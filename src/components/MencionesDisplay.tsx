@@ -11,6 +11,29 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
     return tipo === 'tv' || tipo === 'radio' || tipo === 'televisión' || tipo === 'television';
   });
 
+  // Función para formatear fechas de YYYY-MM-DD a DD-MM-YYYY (formato europeo)
+  const formatFecha = (fecha: string): string => {
+    if (!fecha) return '';
+    
+    try {
+      // Si la fecha ya está en formato DD-MM-YYYY, la devuelve tal cual
+      if (fecha.match(/^\d{2}-\d{2}-\d{4}$/)) {
+        return fecha;
+      }
+      
+      // Convierte de YYYY-MM-DD a DD-MM-YYYY
+      const partes = fecha.split('-');
+      if (partes.length === 3) {
+        const [año, mes, dia] = partes;
+        return `${dia}-${mes}-${año}`;
+      }
+      
+      return fecha; // Si no puede convertir, devuelve el original
+    } catch (error) {
+      return fecha;
+    }
+  };
+
   if (mencionesValidas.length === 0) {
     return null;
   }
@@ -68,7 +91,7 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
                 {m.fecha && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-[#8878A9]"><strong>Fecha:</strong></span>
-                    <span className="text-[#2d3748]">{m.fecha}</span>
+                    <span className="text-[#2d3748]">{formatFecha(m.fecha)}</span>
                   </div>
                 )}
               </div>
