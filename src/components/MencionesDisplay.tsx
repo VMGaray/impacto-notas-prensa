@@ -11,28 +11,29 @@ export const MencionesDisplay = ({ menciones }: MencionesDisplayProps) => {
     return tipo === 'tv' || tipo === 'radio' || tipo === 'televisión' || tipo === 'television';
   });
 
-  // Función para formatear fechas de YYYY-MM-DD a DD-MM-YYYY (formato europeo)
-  const formatFecha = (fecha: string): string => {
-    if (!fecha) return '';
+ const formatFecha = (fecha: string): string => {
+  if (!fecha) return '';
+  
+  // Si ya tiene el formato DD-MM-YYYY, no tocar
+  if (/^\d{2}-\d{2}-\d{4}$/.test(fecha)) return fecha;
+
+  try {
+    // Intentamos crear un objeto fecha (soporta YYYY-MM-DD y YYYY/MM/DD)
+    const d = new Date(fecha.includes('-') ? fecha.replace(/-/g, '/') : fecha);
     
-    try {
-      // Si la fecha ya está en formato DD-MM-YYYY, la devuelve tal cual
-      if (fecha.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        return fecha;
-      }
-      
-      // Convierte de YYYY-MM-DD a DD-MM-YYYY
-      const partes = fecha.split('-');
-      if (partes.length === 3) {
-        const [año, mes, dia] = partes;
-        return `${dia}-${mes}-${año}`;
-      }
-      
-      return fecha; // Si no puede convertir, devuelve el original
-    } catch (error) {
-      return fecha;
+    // Si la fecha es válida, formateamos
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).replace(/\//g, '-'); // Cambia / por - para cumplir el formato DD-MM-YYYY
     }
-  };
+    return fecha;
+  } catch {
+    return fecha;
+  }
+};
 
   if (mencionesValidas.length === 0) {
     return null;

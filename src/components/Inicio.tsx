@@ -25,6 +25,25 @@ interface InicioProps {
   onUpdateQueries: (remaining: number) => void;
 }
 
+// Función para el formato de fecha europeo (DD-MM-YYYY)
+const formatFecha = (fecha: string): string => {
+  if (!fecha) return '';
+  if (/^\d{2}-\d{2}-\d{4}$/.test(fecha)) return fecha;
+  try {
+    const d = new Date(fecha.includes('-') ? fecha.replace(/-/g, '/') : fecha);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).replace(/\//g, '-');
+    }
+    return fecha;
+  } catch {
+    return fecha;
+  }
+};
+
 export const Inicio: React.FC<InicioProps> = ({ onOpenAuth, onUpdateQueries }) => {
   const { user, userPlan } = useAuth();
   const [sessionId, setSessionId] = useState<string>('');
@@ -79,9 +98,15 @@ export const Inicio: React.FC<InicioProps> = ({ onOpenAuth, onUpdateQueries }) =
   };
 
   const ensureNumber = (val: any): number => {
-    const num = Number(val);
-    return typeof num === 'number' && !isNaN(num) ? num : 0;
-  };
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') {
+    // Quita todo lo que no sea número (puntos, comas, letras)
+    const limpio = val.replace(/\D/g, '');
+    const num = parseInt(limpio, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  return 0;
+};
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -387,10 +412,11 @@ Resultado global: ${analysisResult.resultado_global}`;
                 <span className="font-semibold text-[#4b5563]">Tema:</span>
                 <span className="text-[#111827] text-right">{tema}</span>
               </div>
-              <div className="flex justify-between items-start p-3 bg-white rounded-lg border-l-4 border-[#931583]">
-                <span className="font-semibold text-[#4b5563]">Fecha de publicación:</span>
-                <span className="text-[#111827]">{fecha}</span>
-              </div>
+              // Dentro del Modal de Inicio.tsx
+            <div className="flex justify-between items-start p-3 bg-white rounded-lg border-l-4 border-[#931583]">
+            <span className="font-semibold text-[#4b5563]">Fecha de publicación:</span>
+            <span className="text-[#111827]">{formatFecha(fecha)}</span> 
+            </div>
               <div
   className={`flex justify-between items-start p-4 rounded-lg border-l-4 ${
     isPositiveResult(analysisResult.resultado_global)
